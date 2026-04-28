@@ -27,7 +27,7 @@ function avatarHtml(nv, size, withUpload) {
     : `<span style="font-weight:800;font-size:${s*.36}px;font-family:JetBrains Mono,monospace;color:#f0d080">${initial(nv.hoTen)}</span>`;
   const avDiv = `<div style="width:${s}px;height:${s}px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:${bgForId(nv.id)};flex-shrink:0">${inner}</div>`;
   if (!withUpload) return avDiv;
-  return `<div class="emp-av-wrap" id="avwrap-${nv.id}">${avDiv}<div class="avt-upload-btn" title="Đổi ảnh" onclick="triggerAvatarUpload('${nv.id}')">📷</div></div>`;
+  return `<div class="emp-av-wrap" id="avwrap-${nv.id}">${avDiv}<div class="avt-upload-btn" title="Đổi ảnh" onclick="triggerAvatarUpload('${nv.id}')"><i class="ri-camera-line"></i></div></div>`;
 }
 
 function stc(color,icon,label,value){ return `<div class="stat-card ${color}"><div class="sc-icon">${icon}</div><div class="sc-label">${label}</div><div class="sc-value">${value}</div></div>`; }
@@ -36,7 +36,7 @@ function stcCustom(color,icon,label,inner){ return `<div class="stat-card ${colo
 // ══════════════════════════════════════════════════════
 //  RENDER ALL
 // ══════════════════════════════════════════════════════
-function renderAll(d) { renderDashboard(d); renderNV(d); renderPC(d); renderQuy(d); renderTT(d); fillDrops(d); renderThongTin(); renderNotif(d); _animateSidebar(); }
+function renderAll(d) { renderDashboard(d); renderNV(d); renderPC(d); renderQuy(d); renderTT(d); fillDrops(d); renderNotif(d); _animateSidebar(); }
 
 function renderDashboard(d) {
   const sl = d.soDuList;
@@ -49,10 +49,10 @@ function renderDashboard(d) {
   const topTen = topUng ? (nvMap[topUng]?.hoTen||topUng) : '—';
 
   document.getElementById('db-stats').innerHTML =
-    stc('blue','👥','Nhân viên',sl.length+' người') +
-    stcCustom('gold','🏆','Ứng nhiều nhất',`<div style="font-family:Be Vietnam Pro,sans-serif;font-size:15px;font-weight:800;color:#9a7020;margin-top:5px">${topTen}</div><div style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:#b8943a;margin-top:2px">${fVND(topAmt)}</div>`) +
-    stc('red','📉','Đang nợ',neg+' người') +
-    stc('gold','💸','Tổng chi tiêu',fVND(tongCT));
+    stc('blue','<i class="ri-group-line"></i>','Nhân viên',sl.length+' người') +
+    stcCustom('gold','<i class="ri-trophy-line"></i>','Ứng nhiều nhất',`<div style="font-family:Be Vietnam Pro,sans-serif;font-size:15px;font-weight:800;color:#9a7020;margin-top:5px">${topTen}</div><div style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:#b8943a;margin-top:2px">${fVND(topAmt)}</div>`) +
+    stc('red','<i class="ri-arrow-down-circle-line"></i>','Đang nợ',neg+' người') +
+    stc('gold','<i class="ri-money-dollar-circle-line"></i>','Tổng chi tiêu',fVND(tongCT));
 
   const sorted = sl.slice().sort((a,b) => {
     if (a.soDu>=0 && b.soDu>=0) return b.soDu-a.soDu;
@@ -60,23 +60,21 @@ function renderDashboard(d) {
     if (a.soDu<0 && b.soDu>=0) return 1;
     return b.soDu-a.soDu;
   });
-  const medals = ['🥇','🥈','🥉'];
   document.getElementById('db-balances').innerHTML = sorted.length
     ? sorted.map((nv,idx)=>{
         const c=nv.soDu>0?'pos':nv.soDu<0?'neg':'zer';
-        const t=nv.soDu>0?'↑ Dư nợ cho vay':nv.soDu<0?'↓ Đang nợ':'⟳ Cân bằng';
-        const badge = idx<3
-          ? `<div style="position:absolute;top:-8px;left:-8px;font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">${medals[idx]}</div>`
-          : (idx<9?`<div style="position:absolute;top:-6px;left:-6px;width:18px;height:18px;border-radius:50%;background:var(--sidebar);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center">${idx+1}</div>`:'');
-        return `<div class="bal-item ${c}${idx===0?' neon-top':''}" style="position:relative">${badge}${avatarHtml(nv,42)}<div><div class="bi-name">${nv.hoTen}</div><div class="bi-amount">${fVND(nv.soDu)}</div><div class="bi-tag">${t}</div></div></div>`;
+        const t=nv.soDu>0?'<i class="ri-arrow-up-line"></i> Dư nợ cho vay':nv.soDu<0?'<i class="ri-arrow-down-line"></i> Đang nợ':'<i class="ri-refresh-line"></i> Cân bằng';
+        const rc = idx===0?'r1':idx===1?'r2':idx===2?'r3':'rn';
+        const badge = `<div class="bal-rank ${rc}">#${idx+1}</div>`;
+        return `<div class="bal-item ${c}${idx===0?' neon-top':''}">${badge}${avatarHtml(nv,42)}<div><div class="bi-name">${nv.hoTen}</div><div class="bi-amount">${fVND(nv.soDu)}</div><div class="bi-tag">${t}</div></div></div>`;
       }).join('')
-    : '<div class="empty"><span>👤</span>Chưa có nhân viên.</div>';
+    : '<div class="empty"><span><i class="ri-user-line"></i></span>Chưa có nhân viên.</div>';
 
   renderSug('db-suggestions', d.goiYThanhToan, false, nvMap);
   document.getElementById('db-sug-ct').textContent = d.goiYThanhToan.length>0 ? d.goiYThanhToan.length+' giao dịch' : '';
   document.getElementById('db-recent').innerHTML = d.phieuChi.slice(0,8).map(pc=>
     `<tr><td><span class="badge bd-gold">${pc.id}</span></td><td style="font-weight:600">${pc.moTa}</td><td>${nvMap[pc.nguoiUngID]?.hoTen||pc.nguoiUngID}</td><td class="c-neu">${fVND(pc.soTienTong)}</td><td class="c-mut">${pc.ngayTao}</td></tr>`
-  ).join('') || '<tr><td colspan="5"><div class="empty"><span>📋</span>Chưa có phiếu chi.</div></td></tr>';
+  ).join('') || '<tr><td colspan="5"><div class="empty"><span><i class="ri-file-list-3-line"></i></span>Chưa có phiếu chi.</div></td></tr>';
   if (!_dbAnimated) requestAnimationFrame(()=>_animateDashboard());
 }
 
@@ -88,6 +86,23 @@ function _animateDashboard(){
   document.querySelectorAll('#db-balances .bal-item').forEach((el,i)=>run(el,i%2===0?'dbBalLeft':'dbBalRight',320+i*65));
   document.querySelectorAll('#db-suggestions .pay-item').forEach((el,i)=>run(el,'dbSugIn',320+i*60));
   document.querySelectorAll('#db-recent tr').forEach((el,i)=>run(el,'dbRowIn',480+i*50));
+}
+
+function _animatePage(name){
+  function run(el,kf,delay){ el.style.animation='none'; requestAnimationFrame(()=>{ el.style.animation=`${kf} .35s ease ${delay}ms both`; }); }
+  if(name==='nhanvien'){
+    document.querySelectorAll('#nv-grid .emp-card').forEach((el,i)=>run(el,'dbStatIn',i*55));
+  } else if(name==='phieuchi'){
+    document.querySelectorAll('#pc-table tr').forEach((el,i)=>run(el,'dbRowIn',i*38));
+  } else if(name==='quychung'){
+    document.querySelectorAll('#quy-stats .stat-card').forEach((el,i)=>run(el,'dbStatIn',i*75));
+    document.querySelectorAll('#nopquy-list tr').forEach((el,i)=>run(el,'dbBalLeft',200+i*38));
+    document.querySelectorAll('#chiquy-list tr').forEach((el,i)=>run(el,'dbBalRight',200+i*38));
+  } else if(name==='thanhtoan'){
+    document.querySelectorAll('#page-thanhtoan .card').forEach((el,i)=>run(el,i%2===0?'dbBalLeft':'dbBalRight',i*90));
+    document.querySelectorAll('#tt-quick-sug .pay-item').forEach((el,i)=>run(el,'dbSugIn',200+i*60));
+    document.querySelectorAll('#tt-table tr').forEach((el,i)=>run(el,'dbRowIn',280+i*38));
+  }
 }
 
 function _animateSidebar(){
@@ -108,13 +123,13 @@ function toggleSidebar(){
 function renderSug(id, list, showBtn, nvMap) {
   const nm = nvMap||{};
   document.getElementById(id).innerHTML = !list||!list.length
-    ? '<div class="empty"><span>✅</span>Tất cả công nợ đã cân bằng!</div>'
+    ? '<div class="empty"><span><i class="ri-checkbox-circle-line"></i></span>Tất cả công nợ đã cân bằng!</div>'
     : list.map(t=>{
         const nTra  = nm[t.nguoiTraID]  || {id:t.nguoiTraID,  hoTen:t.nguoiTraTen,  avatarFileID:''};
         const nNhan = nm[t.nguoiNhanID] || {id:t.nguoiNhanID, hoTen:t.nguoiNhanTen, avatarFileID:''};
         const btn = showBtn
-          ? `<button class="btn btn-green btn-sm" onclick="xacNhanGoiY('${t.nguoiTraID}','${t.nguoiNhanID}',${t.soTien})">✓ Thanh toán</button>`
-          : `<button class="btn btn-ghost btn-sm" onclick="fillTT('${t.nguoiTraID}','${t.nguoiNhanID}',${t.soTien})">Ghi nhận →</button>`;
+          ? `<button class="btn btn-green btn-sm" onclick="xacNhanGoiY('${t.nguoiTraID}','${t.nguoiNhanID}',${t.soTien})"><i class="ri-check-line"></i> Thanh toán</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="fillTT('${t.nguoiTraID}','${t.nguoiNhanID}',${t.soTien})">Ghi nhận <i class="ri-arrow-right-line"></i></button>`;
         return `<div class="pay-item">${avatarHtml(nTra,30)}<div class="pi-from">${t.nguoiTraTen}</div><div class="pi-arrow">→</div>${avatarHtml(nNhan,30)}<div class="pi-to">${t.nguoiNhanTen}</div><div class="pi-amount">${fVND(t.soTien)}</div>${btn}</div>`;
       }).join('');
 }
@@ -126,12 +141,12 @@ function renderNV(d) {
     ? d.nhanVien.map(nv=>{
         const sd=sMap[nv.id]||0;
         const cc=sd>0?'c-pos':sd<0?'c-neg':'c-neu';
-        const t=sd>0?'↑ Dư nợ cho vay':sd<0?'↓ Đang nợ':'⟳ Đã cân bằng';
+        const t=sd>0?'<i class="ri-arrow-up-line"></i> Dư nợ cho vay':sd<0?'<i class="ri-arrow-down-line"></i> Đang nợ':'<i class="ri-refresh-line"></i> Đã cân bằng';
         const qrCls = nv.qrFileID ? 'qr-upload-btn qr-has' : 'qr-upload-btn';
-        const qrLbl = nv.qrFileID ? '✅ Cập nhật QR' : '＋ Thêm QR ngân hàng';
+        const qrLbl = nv.qrFileID ? '<i class="ri-refresh-line"></i> Cập nhật QR' : '<i class="ri-add-line"></i> Thêm QR ngân hàng';
         return `<div class="emp-card">${avatarHtml(nv,60,true)}<div class="emp-name">${nv.hoTen}</div><div class="emp-id">${nv.id}</div><div class="emp-bal ${cc}">${fVND(sd)}</div><div class="emp-tag">${t}</div><button class="${qrCls}" onclick="triggerQRUpload('${nv.id}')">${qrLbl}</button></div>`;
       }).join('')
-    : '<div class="empty"><span>👤</span>Chưa có nhân viên.</div>';
+    : '<div class="empty"><span><i class="ri-user-line"></i></span>Chưa có nhân viên.</div>';
 }
 
 function onSearchPC(v){ _searchPC=v.toLowerCase().trim(); _pgKey('pc').page=1; if(D) renderPC(D); }
@@ -153,10 +168,10 @@ function renderPC(d) {
     <td class="c-mut">${pc.ngayTao}</td>
     <td><div class="action-btns">
       <button class="btn btn-ghost btn-sm" onclick="xemChiTiet('${pc.id}')">Chi tiết</button>
-      <button class="btn-icon edit" onclick="moSuaPC('${pc.id}')">✏️</button>
-      <button class="btn-icon del"  onclick="xoaPhieu('PC','${pc.id}')">🗑️</button>
+      <button class="btn-icon edit" onclick="moSuaPC('${pc.id}')"><i class="ri-edit-line"></i></button>
+      <button class="btn-icon del"  onclick="xoaPhieu('PC','${pc.id}')"><i class="ri-delete-bin-line"></i></button>
     </div></td></tr>`,
-  '<div class="empty"><span>📋</span>Chưa có phiếu chi.</div>');
+  '<div class="empty"><span><i class="ri-file-list-3-line"></i></span>Chưa có phiếu chi.</div>');
 }
 
 function xemChiTiet(pcID) {
@@ -188,24 +203,24 @@ function xemChiTiet(pcID) {
 
 function renderQuy(d) {
   document.getElementById('quy-stats').innerHTML=
-    stc('green','📥','Tổng nộp quỹ',fVND(d.tongNopQuy))+
-    stc('red','📤','Tổng chi quỹ',fVND(d.tongChiQuy))+
-    stc(d.soDuQuy>=0?'blue':'red','💰','Số dư quỹ',fVND(d.soDuQuy));
+    stc('green','<i class="ri-inbox-archive-line"></i>','Tổng nộp quỹ',fVND(d.tongNopQuy))+
+    stc('red','<i class="ri-inbox-unarchive-line"></i>','Tổng chi quỹ',fVND(d.tongChiQuy))+
+    stc(d.soDuQuy>=0?'blue':'red','<i class="ri-wallet-3-line"></i>','Số dư quỹ',fVND(d.soDuQuy));
   let nqList=d.quyChi;
   if(_searchNQ) nqList=nqList.filter(q=>(q.nhanVienTen||q.nhanVienID||'').toLowerCase().includes(_searchNQ)||(q.moTa||'').toLowerCase().includes(_searchNQ));
   _pgRender('nq', nqList, 'nopquy-list', 'nq-pgctrl', q=>`<tr>
     <td style="font-weight:600">${q.nhanVienTen||q.nhanVienID}</td>
     <td class="c-mut">${q.moTa||'Nộp quỹ'}</td><td class="c-mut">${q.ngayNop}</td>
     <td class="c-pos">+${fVND(q.soTien)}</td>
-    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaNQ('${q.id}')">✏️</button><button class="btn-icon del" onclick="xoaPhieu('NQ','${q.id}')">🗑️</button></div></td></tr>`,
-  '<div class="empty"><span>📥</span>Chưa có dữ liệu.</div>');
+    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaNQ('${q.id}')"><i class="ri-edit-line"></i></button><button class="btn-icon del" onclick="xoaPhieu('NQ','${q.id}')"><i class="ri-delete-bin-line"></i></button></div></td></tr>`,
+  '<div class="empty"><span><i class="ri-inbox-archive-line"></i></span>Chưa có dữ liệu.</div>');
   let cqList=d.chiQuyList;
   if(_searchCQ) cqList=cqList.filter(c=>(c.moTa||'').toLowerCase().includes(_searchCQ));
   _pgRender('cq', cqList, 'chiquy-list', 'cq-pgctrl', c=>`<tr>
     <td style="font-weight:600">${c.moTa}</td><td class="c-mut">${c.ngayTao}</td>
     <td class="c-neg">−${fVND(c.soTien)}</td>
-    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaCQ('${c.id}')">✏️</button><button class="btn-icon del" onclick="xoaPhieu('CQ','${c.id}')">🗑️</button></div></td></tr>`,
-  '<div class="empty"><span>📤</span>Chưa có dữ liệu.</div>');
+    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaCQ('${c.id}')"><i class="ri-edit-line"></i></button><button class="btn-icon del" onclick="xoaPhieu('CQ','${c.id}')"><i class="ri-delete-bin-line"></i></button></div></td></tr>`,
+  '<div class="empty"><span><i class="ri-inbox-unarchive-line"></i></span>Chưa có dữ liệu.</div>');
 }
 
 function renderTT(d) {
@@ -214,13 +229,13 @@ function renderTT(d) {
   const sugEl=document.getElementById('tt-quick-sug');
   if (sugEl) {
     sugEl.innerHTML = d.goiYThanhToan?.length
-      ? '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">💡 Gợi ý tối ưu</div>'
+      ? '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px"><i class="ri-lightbulb-flash-line"></i> Gợi ý tối ưu</div>'
         + d.goiYThanhToan.map(t=>{
             const nTra=nvMap[t.nguoiTraID]||{id:t.nguoiTraID,hoTen:t.nguoiTraTen,avatarFileID:''};
             const nNhan=nvMap[t.nguoiNhanID]||{id:t.nguoiNhanID,hoTen:t.nguoiNhanTen,avatarFileID:''};
             return `<div class="pay-item">${avatarHtml(nTra,30)}<div class="pi-from">${t.nguoiTraTen}</div><div class="pi-arrow">→</div>${avatarHtml(nNhan,30)}<div class="pi-to">${t.nguoiNhanTen}</div><div class="pi-amount">${fVND(t.soTien)}</div><button class="btn btn-ghost btn-sm" onclick="fillTTForm('${t.nguoiTraID}','${t.nguoiNhanID}',${t.soTien})">Chọn</button></div>`;
           }).join('')
-      : '<div class="empty" style="padding:12px 0"><span style="font-size:20px">✅</span>Đã cân bằng!</div>';
+      : '<div class="empty" style="padding:12px 0"><span style="font-size:20px"><i class="ri-checkbox-circle-line"></i></span>Đã cân bằng!</div>';
   }
   const nameMap={}; d.nhanVien.forEach(nv=>nameMap[nv.id]=nv.hoTen);
   let ttList=d.thanhToanList;
@@ -230,102 +245,10 @@ function renderTT(d) {
     <td style="color:var(--red);font-weight:600">${tt.nguoiTraTen||nameMap[tt.nguoiTraID]}</td>
     <td style="color:var(--green);font-weight:600">${tt.nguoiNhanTen||nameMap[tt.nguoiNhanID]}</td>
     <td class="c-neu">${fVND(tt.soTien)}</td><td class="c-mut">${tt.ngayTao}</td>
-    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaTT('${tt.id}')">✏️</button><button class="btn-icon del" onclick="xoaPhieu('TT','${tt.id}')">🗑️</button></div></td></tr>`,
-  '<div class="empty"><span>💳</span>Chưa có lịch sử.</div>');
+    <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaTT('${tt.id}')"><i class="ri-edit-line"></i></button><button class="btn-icon del" onclick="xoaPhieu('TT','${tt.id}')"><i class="ri-delete-bin-line"></i></button></div></td></tr>`,
+  '<div class="empty"><span><i class="ri-bank-card-line"></i></span>Chưa có lịch sử.</div>');
 }
 
-async function renderThongTin() {
-  const tb=document.getElementById('pv-table');
-  const { data, error } = await sb.from('phien_ban').select('*').order('id',{ascending:false});
-  if (error||!data?.length) { tb.innerHTML='<tr><td colspan="3"><div class="empty"><span>📋</span>Chưa có dữ liệu.</div></td></tr>'; return; }
-  const currentUrl = _normalizeUrl(window.location.href);
-  tb.innerHTML = data.map((row,idx)=>{
-    const isCurrent = row.link && _normalizeUrl(row.link) === currentUrl;
-    const isLatest  = idx === 0;
-    return `<tr${isCurrent?' style="background:rgba(201,168,76,.06)"':''}>
-    <td><div class="pv-ver-cell">
-      <span class="pv-ver badge ${isLatest?'bd-gold':'bd-gray'}">${row.ver}</span>
-      ${isLatest?'<span class="pv-latest">Mới nhất</span>':''}
-    </div></td>
-    <td class="pv-updated">${row.updated}</td>
-    <td>${row.link?`<button class="pv-link-btn" onclick="pvCopyLink(this,'${encodeURIComponent(row.link)}')">🔗 Copy link</button>`:'<span style="font-size:12px;color:var(--muted)">—</span>'}</td>
-  </tr>`;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════════════
-//  VERSION CHECK — so sánh URL hiện tại với DB
-// ══════════════════════════════════════════════════════
-function _normalizeUrl(url) {
-  // Chuẩn hóa URL: bỏ query string, hash, trailing slash để so sánh chính xác
-  try {
-    const u = new URL(url);
-    return (u.origin + u.pathname).replace(/\/+$/, '').toLowerCase();
-  } catch { return (url||'').split('?')[0].split('#')[0].replace(/\/+$/, '').toLowerCase(); }
-}
-
-async function checkVersion() {
-  const verText   = document.getElementById('sb-ver-text');
-  const verStatus = document.getElementById('sb-ver-status');
-  if (verStatus) { verStatus.className='sb-ver-status checking sb-label'; verStatus.textContent='...'; }
-
-  const { data, error } = await sb.from('phien_ban').select('ver,updated,link').order('id',{ascending:false});
-  if (error || !data?.length) {
-    if (verStatus) { verStatus.className='sb-ver-status latest sb-label'; verStatus.textContent='✦ Đang dùng'; }
-    return;
-  }
-
-  const currentUrl = _normalizeUrl(window.location.href);
-  // Tìm phiên bản khớp URL đang chạy
-  const matchedRow = data.find(r => r.link && _normalizeUrl(r.link) === currentUrl);
-  const latestRow  = data[0]; // đã sort desc → index 0 là mới nhất
-  const isLatest   = matchedRow && matchedRow.ver === latestRow.ver;
-
-  // Cập nhật badge sidebar
-  if (verText)   verText.textContent = matchedRow ? matchedRow.ver : '—';
-  if (verStatus) {
-    if (!matchedRow) {
-      // Không nhận ra URL → có thể đang dev local
-      verStatus.className='sb-ver-status latest sb-label';
-      verStatus.textContent='✦ Dev';
-    } else if (isLatest) {
-      verStatus.className='sb-ver-status latest sb-label';
-      verStatus.textContent='✦ Mới nhất';
-    } else {
-      verStatus.className='sb-ver-status outdated sb-label';
-      verStatus.textContent='⬆ Cập nhật!';
-    }
-  }
-
-  // Chỉ hiện banner khi nhận ra URL và có bản mới hơn
-  if (matchedRow && !isLatest) {
-    _showUpdateBanner(matchedRow.ver, latestRow.ver, latestRow.updated, latestRow.link);
-  }
-}
-
-function _showUpdateBanner(currentVer, newVer, updated, link) {
-  const old = document.getElementById('ver-update-banner');
-  if (old) old.remove();
-
-  const banner = document.createElement('div');
-  banner.id = 'ver-update-banner';
-  banner.className = 'ver-banner';
-  const safeLink = link ? encodeURIComponent(link) : '';
-  banner.innerHTML = `
-    <div class="ver-banner-icon">🚀</div>
-    <div class="ver-banner-body">
-      <div class="ver-banner-title">Có phiên bản mới — ${newVer}</div>
-      <div class="ver-banner-desc">Bạn đang dùng <strong style="color:rgba(255,255,255,.7)">${currentVer}</strong>. Phiên bản <strong style="color:#f0d080">${newVer}</strong> đã sẵn sàng${updated?` (${updated})`:''}.</div>
-      <div class="ver-banner-actions">
-        ${safeLink?`<button class="ver-banner-btn primary" onclick="pvCopyLink(this,'${safeLink}');document.getElementById('ver-update-banner').remove()">🔗 Copy link tải về</button>`:''}
-        <button class="ver-banner-btn ghost" onclick="gotoPage('thongtin',document.querySelector('.sb-item:last-child'));document.getElementById('ver-update-banner').remove()">Xem chi tiết</button>
-      </div>
-    </div>
-    <button class="ver-banner-close" onclick="document.getElementById('ver-update-banner').remove()" title="Đóng">×</button>
-  `;
-  document.body.appendChild(banner);
-  setTimeout(()=>{ if(banner.parentNode){ banner.style.transition='opacity .4s,transform .4s'; banner.style.opacity='0'; banner.style.transform='translateX(-50%) translateY(16px)'; setTimeout(()=>banner.remove(),420); }}, 12000);
-}
 
 // ══════════════════════════════════════════════════════
 //  PAGINATION
@@ -407,13 +330,13 @@ function updateSplitSummary(){
   if(!D||!total){sv.style.display='none';return;}
   const sel=D.nhanVien.filter(nv=>document.getElementById('prow-'+nv.id)?.classList.contains('on'));
   if(!sel.length){sv.style.display='none';return;}
-  if(splitMode==='even'){sv.style.display='block';sv.className='split-summary ok';sv.textContent=`${sel.length} người tham gia → mỗi người chịu ${fVND(Math.round(total/sel.length))}`;return;}
+  if(splitMode==='even'){sv.style.display='block';sv.className='split-summary ok';sv.innerHTML=`<i class="ri-group-line"></i> ${sel.length} người tham gia — mỗi người chịu ${fVND(Math.round(total/sel.length))}`;return;}
   const sum=sel.reduce((s,nv)=>{const a=document.getElementById('amt-'+nv.id);return s+(Number(a?.value)||0);},0);
   sv.style.display='block';
   const diff=total-sum;
-  if(Math.abs(diff)<1){sv.className='split-summary ok';sv.textContent='✅ Tổng khớp: '+fVND(total);}
-  else if(diff>0){sv.className='split-summary warn';sv.textContent='⚠️ Còn thiếu '+fVND(diff);}
-  else{sv.className='split-summary warn';sv.textContent='⚠️ Vượt quá '+fVND(-diff);}
+  if(Math.abs(diff)<1){sv.className='split-summary ok';sv.innerHTML='<i class="ri-checkbox-circle-line"></i> Tổng khớp: '+fVND(total);}
+  else if(diff>0){sv.className='split-summary warn';sv.innerHTML='<i class="ri-alert-line"></i> Còn thiếu '+fVND(diff);}
+  else{sv.className='split-summary warn';sv.innerHTML='<i class="ri-alert-line"></i> Vượt quá '+fVND(-diff);}
 }
 function selectAllParts(){
   if(!D) return;
@@ -451,16 +374,6 @@ function chonModule(el,ten){
   else{inp.style.display='none';inp.value=ten;}
 }
 
-// ── COPY LINK ─────────────────────────────────────────
-function pvCopyLink(btn,enc){
-  const url=decodeURIComponent(enc);
-  (navigator.clipboard?.writeText(url)||Promise.reject()).then(()=>pvCopyFb(btn)).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=url;ta.style.cssText='position:fixed;opacity:0';
-    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');pvCopyFb(btn);}catch(e){}document.body.removeChild(ta);
-  });
-}
-function pvCopyFb(btn){btn.classList.add('copied');btn.textContent='✅ Đã copy!';setTimeout(()=>{btn.classList.remove('copied');btn.textContent='🔗 Copy link';},2000);}
-
 // ══════════════════════════════════════════════════════
 //  UI HELPERS
 // ══════════════════════════════════════════════════════
@@ -471,7 +384,7 @@ function gotoPage(name,el){
   if(el) el.classList.add('active');
   else document.querySelectorAll('.sb-item').forEach(b=>{ if((b.getAttribute('onclick')||'').includes("'"+name+"'")) b.classList.add('active'); });
   document.querySelector('.sidebar').classList.remove('open');
-  if(name==='thongtin') renderThongTin();
+  requestAnimationFrame(()=>_animatePage(name));
 }
 function openModal(id){
   const overlay=document.getElementById(id);
@@ -502,8 +415,8 @@ function _animateModalIn(overlay){
 }
 function closeOnBg(e,id){ if(e.target===document.getElementById(id)) closeModal(id); }
 function mAlert(_id,msg,ok){ toast(msg, ok!==false?'ok':'err'); }
-function setLoading(btn,lbl){ btn.disabled=true; btn.textContent=lbl; }
-function resetBtn(btn,lbl){ btn.disabled=false; btn.textContent=lbl; }
+function setLoading(btn,lbl){ btn.disabled=true; btn.innerHTML=lbl; }
+function resetBtn(btn,lbl){ btn.disabled=false; btn.innerHTML=lbl; }
 function updateMoneyDisplay(inputId,displayId){ const v=Number(document.getElementById(inputId).value)||0; const el=document.getElementById(displayId); if(el) el.textContent=v>0?fVND(v):''; }
 function formatDateInput(el){ let v=el.value.replace(/\D/g,''); if(v.length>=5) v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4,8); else if(v.length>=3) v=v.slice(0,2)+'/'+v.slice(2); el.value=v; }
 
@@ -530,30 +443,30 @@ function renderNotif(d){
   // 1. Cuối tháng (từ ngày 25) → nhắc thanh toán
   if(dayOfMonth>=25){
     const daysLeft=lastDay-dayOfMonth;
-    items.push({icon:'remind',emoji:'⏰',title:`Còn ${daysLeft} ngày cuối tháng — Nhắc mọi người thanh toán công nợ!`,time:'Hệ thống'});
+    items.push({icon:'remind',emoji:'<i class="ri-alarm-warning-line"></i>',title:`Còn ${daysLeft} ngày cuối tháng — Nhắc mọi người thanh toán công nợ!`,time:'Hệ thống'});
   }
 
   // 2. Ai đang nợ
   d.soDuList.forEach(nv=>{
-    if(nv.soDu<0) items.push({icon:'debt',emoji:'💸',title:`${nv.hoTen} đang nợ ${fVND(-nv.soDu)}`,time:'Công nợ hiện tại'});
+    if(nv.soDu<0) items.push({icon:'debt',emoji:'<i class="ri-money-dollar-circle-line"></i>',title:`${nv.hoTen} đang nợ ${fVND(-nv.soDu)}`,time:'Công nợ hiện tại'});
   });
 
   // 3. Thanh toán gần đây (5 gần nhất)
   d.thanhToanList.slice(0,5).forEach(tt=>{
     const tra=nvMap[tt.nguoiTraID]?.hoTen||tt.nguoiTraID;
     const nhan=nvMap[tt.nguoiNhanID]?.hoTen||tt.nguoiNhanID;
-    items.push({icon:'pay',emoji:'✅',title:`${tra} đã thanh toán ${fVND(tt.soTien)} cho ${nhan}`,time:tt.ngayTao||''});
+    items.push({icon:'pay',emoji:'<i class="ri-check-double-line"></i>',title:`${tra} đã thanh toán ${fVND(tt.soTien)} cho ${nhan}`,time:tt.ngayTao||''});
   });
 
   // 4. Nộp quỹ gần đây (5 gần nhất)
   d.quyChi.slice(0,5).forEach(q=>{
     const nv=nvMap[q.nhanVienID]?.hoTen||q.nhanVienID;
-    items.push({icon:'fund',emoji:'🏦',title:`${nv} nộp quỹ ${fVND(q.soTien)}`,time:q.ngayNop||''});
+    items.push({icon:'fund',emoji:'<i class="ri-safe-2-line"></i>',title:`${nv} nộp quỹ ${fVND(q.soTien)}`,time:q.ngayNop||''});
   });
 
   // 5. Chi quỹ gần đây (3 gần nhất)
   d.chiQuyList.slice(0,3).forEach(c=>{
-    items.push({icon:'fund',emoji:'📤',title:`Chi quỹ: ${c.moTa} — ${fVND(c.soTien)}`,time:c.ngayTao||''});
+    items.push({icon:'fund',emoji:'<i class="ri-inbox-unarchive-line"></i>',title:`Chi quỹ: ${c.moTa} — ${fVND(c.soTien)}`,time:c.ngayTao||''});
   });
 
   const list=document.getElementById('notif-list');
@@ -562,7 +475,7 @@ function renderNotif(d){
   cnt.textContent=items.length;
 
   if(!items.length){
-    list.innerHTML='<div class="notif-empty">🔔 Không có thông báo</div>';
+    list.innerHTML='<div class="notif-empty"><i class="ri-notification-off-line" style="font-size:22px;display:block;margin-bottom:6px"></i>Không có thông báo</div>';
     dot.style.display='none';
     return;
   }
@@ -578,8 +491,12 @@ function renderNotif(d){
 function toast(msg,type){
   const w=document.getElementById('toast-wrap');
   const el=document.createElement('div');
-  const colors={ok:'#1dba7c',err:'#e8453c',info:'#3b6ef0'};
-  el.style.cssText=`padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;min-width:220px;background:${colors[type]||colors.info};color:#fff;box-shadow:0 7px 22px rgba(0,0,0,.3);pointer-events:auto;animation:slideR .25s ease`;
-  el.textContent=msg; w.appendChild(el);
-  setTimeout(()=>{el.style.transition='opacity .28s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},3000);
+  const colors={ok:'#10b981',err:'#ef4444',info:'#3b82f6'};
+  const icons={ok:'ri-checkbox-circle-line',err:'ri-close-circle-line',info:'ri-information-line'};
+  const c=colors[type]||colors.info;
+  el.style.cssText=`padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;min-width:240px;max-width:340px;background:#fff;color:#0f172a;box-shadow:0 8px 32px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.08);pointer-events:auto;animation:slideR .25s ease;border:1px solid #e2e8f0;border-left:4px solid ${c}`;
+  const cleanMsg=msg.replace(/^[✅❌⚠️💸🔗📩🔔]+\s*/,'');
+  el.innerHTML=`<i class="${icons[type]||icons.info}" style="font-size:18px;flex-shrink:0;color:${c}"></i><span>${cleanMsg}</span>`;
+  w.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .28s,transform .28s';el.style.opacity='0';el.style.transform='translateX(8px)';setTimeout(()=>el.remove(),300);},3200);
 }

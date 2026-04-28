@@ -26,9 +26,9 @@ async function doThemNV(btn) {
   const hoTen = document.getElementById('nv-hoten').value.trim();
   const email  = document.getElementById('nv-email').value.trim();
   if (!hoTen) return mAlert('nv-alert','⚠️ Vui lòng nhập họ và tên!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('nhan_vien').insert({ id: genID('NV'), ho_ten: hoTen, email: email||null });
-  resetBtn(btn,'✓ Thêm nhân viên');
+  resetBtn(btn,'<i class="ri-check-line"></i> Thêm nhân viên');
   if (error) return mAlert('nv-alert','❌ '+error.message,false);
   document.getElementById('nv-hoten').value = '';
   document.getElementById('nv-email').value = '';
@@ -66,17 +66,17 @@ async function doTaoPC(btn) {
 
   const moTaFull = ghiChu ? moTa+' · '+ghiChu : moTa;
   const pcID = genID('PC');
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
 
   const { error: e1 } = await sb.from('phieu_chi').insert({
     id: pcID, mo_ta: moTaFull, so_tien_tong: soTien,
     nguoi_ung_id: payer, ngay_tao: ngay
   });
-  if (e1) { resetBtn(btn,'✓ Tạo phiếu chi'); return mAlert('pc-alert','❌ '+e1.message,false); }
+  if (e1) { resetBtn(btn,'<i class="ri-check-line"></i> Tạo phiếu chi'); return mAlert('pc-alert','❌ '+e1.message,false); }
 
   const rows = dsChi.map(x => ({ phieu_chi_id: pcID, nhan_vien_id: x.nvID, so_tien_chia: x.soTien }));
   const { error: e2 } = await sb.from('chi_tiet_phieu_chi').insert(rows);
-  resetBtn(btn,'✓ Tạo phiếu chi');
+  resetBtn(btn,'<i class="ri-check-line"></i> Tạo phiếu chi');
   if (e2) return mAlert('pc-alert','❌ '+e2.message,false);
   resetPCForm();
   closeModal('modal-phieuchi');
@@ -90,9 +90,9 @@ async function doNopQuy(btn) {
   const ngay   = document.getElementById('nq-ngay').value.trim() || todayStr();
   if (!nvID) return mAlert('nq-alert','⚠️ Chọn nhân viên!',false);
   if (!soTien||soTien<1000) return mAlert('nq-alert','⚠️ Số tiền không hợp lệ!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('quy_nop').insert({ id: genID('NQ'), nhan_vien_id: nvID, so_tien: soTien, mo_ta: moTa||null, ngay_nop: ngay });
-  resetBtn(btn,'✓ Xác nhận nộp');
+  resetBtn(btn,'<i class="ri-check-line"></i> Xác nhận nộp');
   if (error) return mAlert('nq-alert','❌ '+error.message,false);
   ['nq-sotien','nq-mota','nq-ngay'].forEach(id => document.getElementById(id).value='');
   document.getElementById('nq-nv').value='';
@@ -107,9 +107,9 @@ async function doChiQuy(btn) {
   if (!moTa) return mAlert('cq-alert','⚠️ Nhập mô tả!',false);
   if (!soTien||soTien<1000) return mAlert('cq-alert','⚠️ Số tiền không hợp lệ!',false);
   if (D && soTien > D.soDuQuy) return mAlert('cq-alert','⚠️ Vượt quá số dư quỹ ('+fVND(D.soDuQuy)+')!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('quy_chi').insert({ id: genID('CQ'), mo_ta: moTa, so_tien: soTien, ngay_tao: ngay });
-  resetBtn(btn,'✓ Ghi nhận chi');
+  resetBtn(btn,'<i class="ri-check-line"></i> Ghi nhận chi');
   if (error) return mAlert('cq-alert','❌ '+error.message,false);
   ['cq-mota','cq-sotien','cq-ngay'].forEach(id => document.getElementById(id).value='');
   closeModal('modal-chiquy');
@@ -118,13 +118,13 @@ async function doChiQuy(btn) {
 
 async function confirmTT() {
   const btn = document.getElementById('qrtt-confirm-btn');
-  btn.disabled=true; btn.textContent='⏳ Đang ghi...';
+  btn.disabled=true; btn.innerHTML='<i class="ri-loader-4-line ri-spin"></i> Đang ghi...';
   const { error } = await sb.from('thanh_toan').insert({
     id: genID('TT'), nguoi_tra_id: ttPending.traID,
     nguoi_nhan_id: ttPending.nhanID, so_tien: ttPending.soTien,
     ngay_tao: todayStr()
   });
-  btn.disabled=false; btn.textContent='✅ Đã chuyển — Ghi nhận';
+  btn.disabled=false; btn.innerHTML='<i class="ri-check-double-line"></i> Đã chuyển — Ghi nhận';
   if (error) return toast('❌ '+error.message,'err');
   closeQRTT();
   document.getElementById('tt-tra').value='';
@@ -148,14 +148,14 @@ async function doSuaPC(btn) {
     const sum = parts.reduce((s,p)=>s+p.soTien,0);
     if (Math.abs(sum-soTien)>1) return mAlert('epc-alert','⚠️ Tổng phân bổ chưa khớp!',false);
   }
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error: e1 } = await sb.from('phieu_chi').update({ mo_ta: moTa, so_tien_tong: soTien, nguoi_ung_id: nguoiUng, ngay_tao: ngay }).eq('id',id);
-  if (e1) { resetBtn(btn,'✓ Lưu thay đổi'); return mAlert('epc-alert','❌ '+e1.message,false); }
+  if (e1) { resetBtn(btn,'<i class="ri-save-line"></i> Lưu thay đổi'); return mAlert('epc-alert','❌ '+e1.message,false); }
   if (parts.length) {
     await sb.from('chi_tiet_phieu_chi').delete().eq('phieu_chi_id',id);
     await sb.from('chi_tiet_phieu_chi').insert(parts.map(p=>({ phieu_chi_id: id, nhan_vien_id: p.nvID, so_tien_chia: p.soTien })));
   }
-  resetBtn(btn,'✓ Lưu thay đổi');
+  resetBtn(btn,'<i class="ri-save-line"></i> Lưu thay đổi');
   toast('✅ Đã cập nhật!','ok'); closeModal('modal-edit-pc');
 }
 
@@ -166,9 +166,9 @@ async function doSuaNQ(btn) {
   const moTa = document.getElementById('enq-mota').value.trim();
   const ngay = document.getElementById('enq-ngay').value.trim();
   if (!nvID||!soTien) return mAlert('enq-alert','⚠️ Vui lòng điền đầy đủ!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('quy_nop').update({ nhan_vien_id: nvID, so_tien: soTien, mo_ta: moTa, ngay_nop: ngay }).eq('id',id);
-  resetBtn(btn,'✓ Lưu thay đổi');
+  resetBtn(btn,'<i class="ri-save-line"></i> Lưu thay đổi');
   if (error) return mAlert('enq-alert','❌ '+error.message,false);
   toast('✅ Đã cập nhật!','ok'); closeModal('modal-edit-nq');
 }
@@ -179,9 +179,9 @@ async function doSuaCQ(btn) {
   const soTien = Number(document.getElementById('ecq-sotien').value);
   const ngay = document.getElementById('ecq-ngay').value.trim();
   if (!moTa||!soTien) return mAlert('ecq-alert','⚠️ Vui lòng điền đầy đủ!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('quy_chi').update({ mo_ta: moTa, so_tien: soTien, ngay_tao: ngay }).eq('id',id);
-  resetBtn(btn,'✓ Lưu thay đổi');
+  resetBtn(btn,'<i class="ri-save-line"></i> Lưu thay đổi');
   if (error) return mAlert('ecq-alert','❌ '+error.message,false);
   toast('✅ Đã cập nhật!','ok'); closeModal('modal-edit-cq');
 }
@@ -193,9 +193,9 @@ async function doSuaTT(btn) {
   const soTien = Number(document.getElementById('ett-sotien').value);
   const ngay = document.getElementById('ett-ngay').value.trim();
   if (!tra||!nhan||!soTien||tra===nhan) return mAlert('ett-alert','⚠️ Vui lòng kiểm tra lại!',false);
-  setLoading(btn,'Đang lưu...');
+  setLoading(btn,'<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
   const { error } = await sb.from('thanh_toan').update({ nguoi_tra_id: tra, nguoi_nhan_id: nhan, so_tien: soTien, ngay_tao: ngay }).eq('id',id);
-  resetBtn(btn,'✓ Lưu thay đổi');
+  resetBtn(btn,'<i class="ri-save-line"></i> Lưu thay đổi');
   if (error) return mAlert('ett-alert','❌ '+error.message,false);
   toast('✅ Đã cập nhật!','ok'); closeModal('modal-edit-tt');
 }
@@ -209,19 +209,6 @@ async function xoaPhieu(loai, id) {
   const { error } = await sb.from(_tableMap[loai]).delete().eq('id',id);
   if (error) toast('❌ '+error.message,'err');
   else toast('✅ Đã xóa!','ok');
-}
-
-// ── PHẢN HỒI ──────────────────────────────────────────
-async function doGuiReport(btn) {
-  const nd = document.getElementById('report-noidung').value.trim();
-  if (!nd) return mAlert('report-alert','⚠️ Vui lòng nhập nội dung!',false);
-  setLoading(btn,'Đang gửi...');
-  const { error } = await sb.from('phan_hoi').insert({ noi_dung: nd });
-  resetBtn(btn,'📩 Gửi phản hồi');
-  if (error) return mAlert('report-alert','❌ '+error.message,false);
-  document.getElementById('report-noidung').value='';
-  closeModal('modal-report');
-  toast('✅ Đã gửi phản hồi! Cảm ơn bạn.','ok');
 }
 
 // ══════════════════════════════════════════════════════
@@ -255,7 +242,7 @@ function onQRFileSelected(e) {
 async function cropConfirm() {
   if (!_c.img) return;
   const btn = document.getElementById('crop-ok-btn');
-  btn.disabled=true; btn.textContent='⏳ Đang upload...';
+  btn.disabled=true; btn.innerHTML='<i class="ri-loader-4-line ri-spin"></i> Đang upload...';
 
   const outSize = _c.mode === 'qr' ? 600 : 200;
   const srcX = Math.max(0, _c.srcCX - _c.srcR);
@@ -280,7 +267,7 @@ async function cropConfirm() {
       contentType: mime, upsert: true
     });
     if (upErr) {
-      btn.disabled=false; btn.textContent='✅ Xác nhận & Upload';
+      btn.disabled=false; btn.innerHTML='<i class="ri-upload-cloud-2-line"></i> Xác nhận & Upload';
       return toast('❌ Upload thất bại: '+upErr.message,'err');
     }
     const { data: urlData } = sb.storage.from(bucket).getPublicUrl(path);
@@ -290,8 +277,8 @@ async function cropConfirm() {
     const field = _c.mode==='qr' ? 'qr_url' : 'avatar_url';
     await sb.from('nhan_vien').update({ [field]: publicUrl }).eq('id', currentUploadNvID);
 
-    btn.disabled=false; btn.textContent='✅ Xác nhận & Upload';
-    closeCrop(); toast('✅ Cập nhật ảnh thành công!','ok');
+    btn.disabled=false; btn.innerHTML='<i class="ri-upload-cloud-2-line"></i> Xác nhận & Upload';
+    closeCrop(); toast('Cập nhật ảnh thành công!','ok');
   }, mime, 0.93);
 }
 
@@ -305,7 +292,6 @@ async function cropConfirm() {
     document.getElementById('global-loading').style.display='none';
     document.getElementById('app-body').style.display='block';
     startRealtime();   // 🔥 WebSocket realtime
-    checkVersion();    // 🔔 Kiểm tra phiên bản mới
   } catch(err) {
     document.getElementById('global-loading').innerHTML=
       `<p style="color:var(--red);font-size:14px">⚠️ Lỗi kết nối Supabase:<br>${err.message}<br><br><small>Kiểm tra SUPABASE_URL và SUPABASE_ANON_KEY trong file HTML.</small></p>`;
