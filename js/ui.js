@@ -114,11 +114,6 @@ function _animateSidebar(){
   });
 }
 
-function toggleSidebar(){
-  const sb=document.querySelector('.sidebar');
-  sb.classList.toggle('collapsed');
-  document.querySelector('.main').style.marginLeft=sb.classList.contains('collapsed')?'64px':'';
-}
 
 function renderSug(id, list, showBtn, nvMap) {
   const nm = nvMap||{};
