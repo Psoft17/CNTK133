@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản Lý Công Nợ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="icon/big.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon/big.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CN 133">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#191325">
+
+<!-- ✅ Supabase JS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Icons -->
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')"><i class="ri-menu-3-line"></i></button>
+<input type="file" id="avt-file-input" accept="image/*" style="display:none" onchange="onAvatarFileSelected(event)">
+<input type="file" id="qr-file-input"  accept="image/*" style="display:none" onchange="onQRFileSelected(event)">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="mark"><img src="icon/big.png" style="width:100%;height:100%;object-fit:contain"></div>
+    <div class="sb-logo-text">
+      <h2>133 Trung Kính</h2>
+      <p>Quản lý chi tiêu chi nhánh</p>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-item active" onclick="gotoPage('dashboard',this)"><span class="icon"><i class="ri-dashboard-2-line"></i></span><span class="sb-label">Dashboard</span></div>
+    <div class="sb-item" onclick="gotoPage('nhanvien',this)"><span class="icon"><i class="ri-team-line"></i></span><span class="sb-label">Nhân Viên</span></div>
+    <div class="sb-item" onclick="gotoPage('phieuchi',this)"><span class="icon"><i class="ri-file-list-3-line"></i></span><span class="sb-label">Phiếu Chi</span></div>
+    <div class="sb-item" onclick="gotoPage('quychung',this)"><span class="icon"><i class="ri-safe-2-line"></i></span><span class="sb-label">Quỹ Chung</span></div>
+    <div class="sb-item" onclick="gotoPage('thanhtoan',this)"><span class="icon"><i class="ri-send-plane-2-line"></i></span><span class="sb-label">Thanh Toán</span></div>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- NOTIFICATION BELL -->
+  <div class="notif-wrap" id="notif-wrap">
+    <button class="notif-bell" onclick="toggleNotif()">
+      <i class="ri-notification-3-line" style="font-size:20px;line-height:1"></i>
+      <span class="notif-dot" id="notif-dot" style="display:none"></span>
+    </button>
+    <div class="notif-panel" id="notif-panel">
+      <div class="notif-head">
+        <h4>Thông báo</h4>
+        <span class="notif-count" id="notif-count">0</span>
+      </div>
+      <div class="notif-list" id="notif-list"></div>
+    </div>
+  </div>
+
+  <div id="global-loading" class="loading">
+    <span class="loader"></span>
+    <p style="margin-top:16px;color:var(--muted);font-size:14px">Loading...</p>
+  </div>
+  <div id="app-body" style="display:none">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="pg-header">
+      <div><h1>Tổng quan</h1><p id="db-sub">—</p></div>
+    </div>
+    <div class="stats-row c4" id="db-stats"></div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h3><i class="ri-money-dollar-circle-line"></i> Số dư</h3></div>
+        <div class="card-body"><div class="bal-grid" id="db-balances"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3><i class="ri-lightbulb-flash-line"></i> Gợi ý thanh toán tối ưu</h3><span style="font-size:12px;color:var(--muted)" id="db-sug-ct"></span></div>
+        <div class="card-body"><div class="pay-list" id="db-suggestions"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="ri-time-line"></i> Phiếu chi gần đây</h3><button class="btn btn-ghost btn-sm" onclick="gotoPage('phieuchi',null)">Xem tất cả <i class="ri-arrow-right-s-line"></i></button></div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Mã</th><th>Mô tả</th><th>Người ứng</th><th>Tổng tiền</th><th>Ngày</th></tr></thead>
+        <tbody id="db-recent"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- NHÂN VIÊN -->
+  <div id="page-nhanvien" class="page">
+    <div class="pg-header">
+      <div><h1>Nhân Viên</h1><p id="nv-sub">—</p></div>
+      <button class="btn btn-primary" onclick="openModal('modal-nhanvien')"><i class="ri-user-add-line"></i> Thêm nhân viên</button>
+    </div>
+    <div class="emp-grid" id="nv-grid"></div>
+  </div>
+
+  <!-- PHIẾU CHI -->
+  <div id="page-phieuchi" class="page">
+    <div class="pg-header">
+      <div><h1>Phiếu Chi</h1><p>Lịch sử ứng tiền chi tiêu nội bộ</p></div>
+      <div class="pg-actions">
+        <div class="search-wrap"><input class="search-input" id="search-pc" type="text" placeholder="Tìm mã, mô tả, người ứng..." oninput="onSearchPC(this.value)"></div>
+        <button class="btn btn-gold" onclick="openModal('modal-phieuchi')"><i class="ri-add-circle-line"></i> Tạo phiếu mới</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Mã phiếu</th><th>Mô tả</th><th>Người ứng</th><th>Tổng tiền</th><th>Số người</th><th>Ngày</th><th></th></tr></thead>
+        <tbody id="pc-table"></tbody></table>
+      </div>
+      <div class="pg-ctrl" id="pc-pgctrl"></div>
+    </div>
+  </div>
+
+  <!-- QUỸ CHUNG -->
+  <div id="page-quychung" class="page">
+    <div class="pg-header">
+      <div><h1>Quỹ Chung</h1><p>Quỹ ăn uống & liên hoan nội bộ</p></div>
+      <div class="pg-actions">
+        <button class="btn btn-green" onclick="openModal('modal-nopquy')"><i class="ri-add-line"></i> Nộp quỹ</button>
+        <button class="btn btn-red"   onclick="openModal('modal-chiquy')"><i class="ri-subtract-line"></i> Chi quỹ</button>
+      </div>
+    </div>
+    <div class="stats-row c3" id="quy-stats"></div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h3><i class="ri-inbox-archive-line"></i> Lịch sử nộp quỹ</h3><div class="card-head-search"><div class="search-wrap"><input class="search-input" id="search-nq" type="text" placeholder="Tìm nhân viên, ghi chú..." oninput="onSearchNQ(this.value)" style="width:220px"></div></div></div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Nhân viên</th><th>Ghi chú</th><th>Ngày nộp</th><th>Số tiền</th><th></th></tr></thead>
+          <tbody id="nopquy-list"></tbody></table>
+        </div>
+        <div class="pg-ctrl" id="nq-pgctrl"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3><i class="ri-inbox-unarchive-line"></i> Lịch sử chi quỹ</h3><div class="card-head-search"><div class="search-wrap"><input class="search-input" id="search-cq" type="text" placeholder="Tìm mô tả..." oninput="onSearchCQ(this.value)" style="width:200px"></div></div></div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Mô tả</th><th>Ngày chi</th><th>Số tiền</th><th></th></tr></thead>
+          <tbody id="chiquy-list"></tbody></table>
+        </div>
+        <div class="pg-ctrl" id="cq-pgctrl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THANH TOÁN -->
+  <div id="page-thanhtoan" class="page">
+    <div class="pg-header">
+      <div><h1>Thanh Toán</h1><p>Cân bằng công nợ nội bộ</p></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="ri-bank-card-2-line"></i> Lập phiếu thanh toán</h3></div>
+      <div class="card-body">
+        <div class="tt-form-grid">
+          <div class="fgroup"><label>Người trả *</label><select id="tt-tra"><option value="">— Chọn người trả —</option></select></div>
+          <div class="fgroup"><label>Người nhận *</label><select id="tt-nhan"><option value="">— Chọn người nhận —</option></select></div>
+          <div class="fgroup"><label>Số tiền (VNĐ) *</label><input id="tt-sotien" type="number" placeholder="100000"></div>
+          <button class="btn btn-primary" onclick="doMoQRTT()">Tiếp tục <i class="ri-arrow-right-line"></i></button>
+        </div>
+        <div id="tt-alert" style="margin-top:10px"></div>
+        <div id="tt-quick-sug" style="margin-top:14px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="ri-history-line"></i> Lịch sử thanh toán</h3><div class="card-head-search"><div class="search-wrap"><input class="search-input" id="search-tt" type="text" placeholder="Tìm người trả, người nhận..." oninput="onSearchTT(this.value)" style="width:240px"></div></div></div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Mã</th><th>Người trả</th><th>Người nhận</th><th>Số tiền</th><th>Ngày</th><th></th></tr></thead>
+        <tbody id="tt-table"></tbody></table>
+      </div>
+      <div class="pg-ctrl" id="tt-pgctrl"></div>
+    </div>
+  </div>
+
+  </div><!-- /app-body -->
+</main>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- Thêm nhân viên -->
+<div class="modal-overlay" id="modal-nhanvien" onclick="closeOnBg(event,'modal-nhanvien')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-user-add-line"></i> Thêm nhân viên mới</h3><button class="modal-close" onclick="closeModal('modal-nhanvien')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="nv-alert"></div>
+      <div class="fgroup"><label>Họ và tên *</label><input id="nv-hoten" type="text" placeholder="Nguyễn Văn A"></div>
+      <div class="fgroup"><label>Email (không bắt buộc)</label><input id="nv-email" type="email" placeholder="example@email.com"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nhanvien')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doThemNV(this)"><i class="ri-check-line"></i> Thêm nhân viên</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tạo phiếu chi -->
+<div class="modal-overlay" id="modal-phieuchi" onclick="closeOnBg(event,'modal-phieuchi')">
+  <div class="modal modal-lg">
+    <div class="modal-head"><h3><i class="ri-file-add-line"></i> Tạo phiếu chi mới</h3><button class="modal-close" onclick="closeModal('modal-phieuchi')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="pc-alert"></div>
+      <div class="fgroup">
+        <label>Loại chi tiêu *</label>
+        <div class="mota-modules">
+          <span class="mota-chip" onclick="chonModule(this,'Cà Phê')">☕ Cà Phê</span>
+          <span class="mota-chip" onclick="chonModule(this,'Ăn Sáng')">🍛 Ăn Sáng</span>
+          <span class="mota-chip" onclick="chonModule(this,'Ăn Trưa')">🍱 Ăn Trưa</span>
+          <span class="mota-chip" onclick="chonModule(this,'Ăn Vặt')">🍿 Ăn Vặt</span>
+          <span class="mota-chip" onclick="chonModule(this,'Trà Sữa')">🧋 Trà Sữa</span>
+          <span class="mota-chip" onclick="chonModule(this,'Khác')"><i class="ri-edit-line"></i> Khác</span>
+        </div>
+        <input id="pc-mota" type="text" placeholder="Nhập mô tả..." style="display:none">
+      </div>
+      <div class="fgroup"><label>Tổng tiền (VNĐ) *</label><div class="money-wrap"><input id="pc-sotien" type="number" oninput="onTotalChange();updateMoneyDisplay('pc-sotien','pc-money')"><span class="money-display" id="pc-money"></span></div></div>
+      <div class="fgroup"><label>Ngày tạo (để trống = hôm nay)</label><input id="pc-ngay" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="formatDateInput(this)"></div>
+      <div class="fgroup"><label>Người ứng tiền *</label><select id="pc-nguoiung" onchange="onPayerChange()"><option value="">— Chọn người ứng tiền —</option></select></div>
+      <div class="fgroup">
+        <label>Cách chia tiền</label>
+        <div class="split-toggle">
+          <button id="split-even-btn" class="on" onclick="setSplitMode('even')"><i class="ri-scales-line"></i> Chia đều</button>
+          <button id="split-custom-btn" onclick="setSplitMode('custom')"><i class="ri-edit-line"></i> Tùy chọn</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label>Người tham gia *</label>
+        <div class="part-list" id="pc-parts"></div>
+        <div class="cb-actions-row">
+          <button onclick="selectAllParts()">Chọn tất cả</button>
+          <button onclick="clearAllParts()">Bỏ chọn</button>
+        </div>
+      </div>
+      <div class="split-summary" id="split-summary"></div>
+      <div class="fgroup"><label>Ghi chú</label><input id="pc-ghichu" type="text" placeholder="Ghi chú thêm (tùy chọn)"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-phieuchi')">Huỷ</button>
+      <button class="btn btn-gold" onclick="doTaoPC(this)"><i class="ri-check-line"></i> Tạo phiếu chi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nộp quỹ -->
+<div class="modal-overlay" id="modal-nopquy" onclick="closeOnBg(event,'modal-nopquy')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-secure-payment-line"></i> Nộp quỹ chung</h3><button class="modal-close" onclick="closeModal('modal-nopquy')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="nq-alert"></div>
+      <div class="fgroup"><label>Nhân viên nộp *</label><select id="nq-nv"><option value="">— Chọn nhân viên —</option></select></div>
+      <div class="fgroup"><label>Số tiền (VNĐ) *</label><div class="money-wrap"><input id="nq-sotien" type="number" placeholder="100000" oninput="updateMoneyDisplay('nq-sotien','nq-money')"><span class="money-display" id="nq-money"></span></div></div>
+      <div class="fgroup"><label>Ghi chú</label><input id="nq-mota" type="text" placeholder="Quỹ tháng 3"></div>
+      <div class="fgroup"><label>Ngày nộp (để trống = hôm nay)</label><input id="nq-ngay" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="formatDateInput(this)"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nopquy')">Huỷ</button>
+      <button class="btn btn-green" onclick="doNopQuy(this)"><i class="ri-check-line"></i> Xác nhận nộp</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chi quỹ -->
+<div class="modal-overlay" id="modal-chiquy" onclick="closeOnBg(event,'modal-chiquy')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-money-dollar-circle-line"></i> Ghi nhận chi quỹ</h3><button class="modal-close" onclick="closeModal('modal-chiquy')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="cq-alert"></div>
+      <div class="fgroup"><label>Mô tả *</label><input id="cq-mota" type="text" placeholder="Liên hoan sinh nhật tháng 3"></div>
+      <div class="fgroup"><label>Số tiền (VNĐ) *</label><div class="money-wrap"><input id="cq-sotien" type="number" placeholder="500000" oninput="updateMoneyDisplay('cq-sotien','cq-money')"><span class="money-display" id="cq-money"></span></div></div>
+      <div class="fgroup"><label>Ngày chi (để trống = hôm nay)</label><input id="cq-ngay" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="formatDateInput(this)"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-chiquy')">Huỷ</button>
+      <button class="btn btn-red" onclick="doChiQuy(this)"><i class="ri-check-line"></i> Ghi nhận chi</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Thanh Toán -->
+<div class="qr-pay-overlay" id="modal-qr-tt">
+  <div class="qr-pay-box">
+    <div class="qr-pay-head"><h3><i class="ri-bank-card-2-line"></i> Thanh toán</h3><button class="modal-close" onclick="closeQRTT()"><i class="ri-close-line"></i></button></div>
+    <div class="qr-pay-body">
+      <div class="qr-pay-amount" id="qrtt-amount">—</div>
+      <div class="qr-pay-desc" id="qrtt-desc">—</div>
+      <div class="qr-pay-receiver" id="qrtt-receiver"></div>
+      <div class="qr-pay-img-wrap" id="qrtt-img-wrap"><div class="qr-no-img"><i class="ri-qr-code-line" style="font-size:32px;display:block;margin-bottom:8px"></i>Người nhận chưa có mã QR</div></div>
+      <p style="font-size:11px;color:var(--muted)">Quét QR chuyển tiền, sau đó bấm "Đã chuyển"</p>
+    </div>
+    <div class="qr-pay-foot">
+      <button class="btn btn-ghost" onclick="closeQRTT()">Huỷ</button>
+      <button class="btn btn-green" id="qrtt-confirm-btn" onclick="confirmTT()"><i class="ri-check-double-line"></i> Đã chuyển — Ghi nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chi tiết phiếu chi -->
+<div class="modal-overlay" id="modal-chitiet" onclick="closeOnBg(event,'modal-chitiet')">
+  <div class="modal modal-xl">
+    <div class="modal-head"><h3><i class="ri-file-text-line"></i> Chi tiết phiếu chi</h3><button class="modal-close" onclick="closeModal('modal-chitiet')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body" id="modal-chitiet-body"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-chitiet')">Đóng</button></div>
+  </div>
+</div>
+
+<!-- Sửa Phiếu Chi -->
+<div class="modal-overlay" id="modal-edit-pc" onclick="closeOnBg(event,'modal-edit-pc')">
+  <div class="modal modal-lg">
+    <div class="modal-head"><h3><i class="ri-edit-2-line"></i> Sửa phiếu chi</h3><button class="modal-close" onclick="closeModal('modal-edit-pc')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="epc-alert"></div>
+      <input type="hidden" id="epc-id">
+      <div class="fgroup"><label>Mô tả *</label><input id="epc-mota" type="text"></div>
+      <div class="fgroup"><label>Tổng tiền (VNĐ) *</label><div class="money-wrap"><input id="epc-sotien" type="number" oninput="updateMoneyDisplay('epc-sotien','epc-money');onEpcTotalChange()"><span class="money-display" id="epc-money"></span></div></div>
+      <div class="fgroup"><label>Người ứng tiền *</label><select id="epc-nguoiung"></select></div>
+      <div class="fgroup"><label>Ngày</label><input id="epc-ngay" type="text" maxlength="10" oninput="formatDateInput(this)" placeholder="DD/MM/YYYY"></div>
+      <div class="fgroup">
+        <label>Số tiền từng người</label>
+        <div id="epc-parts-list"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span id="epc-sum-label" style="font-size:12px;color:var(--muted)"></span>
+          <button onclick="epcChiaDeu()" style="font-size:12px;padding:4px 11px;border-radius:6px;border:1.5px solid var(--border);background:#fff;cursor:pointer;color:var(--muted)"><i class="ri-scales-line"></i> Chia đều</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-pc')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doSuaPC(this)"><i class="ri-save-line"></i> Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sửa Nộp Quỹ -->
+<div class="modal-overlay" id="modal-edit-nq" onclick="closeOnBg(event,'modal-edit-nq')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-edit-2-line"></i> Sửa nộp quỹ</h3><button class="modal-close" onclick="closeModal('modal-edit-nq')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="enq-alert"></div>
+      <input type="hidden" id="enq-id">
+      <div class="fgroup"><label>Nhân viên *</label><select id="enq-nv"></select></div>
+      <div class="fgroup"><label>Số tiền (VNĐ) *</label><div class="money-wrap"><input id="enq-sotien" type="number" oninput="updateMoneyDisplay('enq-sotien','enq-money')"><span class="money-display" id="enq-money"></span></div></div>
+      <div class="fgroup"><label>Ghi chú</label><input id="enq-mota" type="text"></div>
+      <div class="fgroup"><label>Ngày nộp</label><input id="enq-ngay" type="text" maxlength="10" oninput="formatDateInput(this)" placeholder="DD/MM/YYYY"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-nq')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doSuaNQ(this)"><i class="ri-save-line"></i> Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sửa Chi Quỹ -->
+<div class="modal-overlay" id="modal-edit-cq" onclick="closeOnBg(event,'modal-edit-cq')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-edit-2-line"></i> Sửa chi quỹ</h3><button class="modal-close" onclick="closeModal('modal-edit-cq')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="ecq-alert"></div>
+      <input type="hidden" id="ecq-id">
+      <div class="fgroup"><label>Mô tả *</label><input id="ecq-mota" type="text"></div>
+      <div class="fgroup"><label>Số tiền (VNĐ) *</label><div class="money-wrap"><input id="ecq-sotien" type="number" oninput="updateMoneyDisplay('ecq-sotien','ecq-money')"><span class="money-display" id="ecq-money"></span></div></div>
+      <div class="fgroup"><label>Ngày chi</label><input id="ecq-ngay" type="text" maxlength="10" oninput="formatDateInput(this)" placeholder="DD/MM/YYYY"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-cq')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doSuaCQ(this)"><i class="ri-save-line"></i> Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sửa Thanh Toán -->
+<div class="modal-overlay" id="modal-edit-tt" onclick="closeOnBg(event,'modal-edit-tt')">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="ri-edit-2-line"></i> Sửa thanh toán</h3><button class="modal-close" onclick="closeModal('modal-edit-tt')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <div id="ett-alert"></div>
+      <input type="hidden" id="ett-id">
+      <div class="fgroup"><label>Người trả *</label><select id="ett-tra"></select></div>
+      <div class="fgroup"><label>Người nhận *</label><select id="ett-nhan"></select></div>
+      <div class="fgroup"><label>Số tiền (VNĐ) *</label><div class="money-wrap"><input id="ett-sotien" type="number" oninput="updateMoneyDisplay('ett-sotien','ett-money')"><span class="money-display" id="ett-money"></span></div></div>
+      <div class="fgroup"><label>Ngày</label><input id="ett-ngay" type="text" maxlength="10" oninput="formatDateInput(this)" placeholder="DD/MM/YYYY"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-tt')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doSuaTT(this)"><i class="ri-save-line"></i> Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Crop Modal -->
+<div class="crop-modal-overlay" id="modal-crop">
+  <div class="crop-modal">
+    <div class="crop-modal-head"><h3 id="crop-title"><i class="ri-scissors-2-line"></i> Chỉnh sửa ảnh</h3><button class="modal-close" onclick="closeCrop()"><i class="ri-close-line"></i></button></div>
+    <div class="crop-canvas-wrap" id="crop-wrap"
+         onpointerdown="cropPD(event)" onpointermove="cropPM(event)"
+         onpointerup="cropPU(event)" onpointercancel="cropPU(event)">
+      <canvas id="crop-canvas"></canvas>
+      <canvas id="crop-ov" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+    </div>
+    <div class="crop-controls">
+      <div class="crop-slider-row">
+        <label><i class="ri-zoom-in-line"></i></label>
+        <input type="range" id="crop-zoom" min="100" max="300" value="100" oninput="cropZoom(this.value)">
+        <span class="crop-slider-val" id="crop-zoom-val">1.0×</span>
+      </div>
+    </div>
+    <div class="crop-hint">Kéo để di chuyển · Cuộn chuột để zoom</div>
+    <div class="crop-preview-row" id="crop-prev-row">
+      <span>Xem trước:</span>
+      <canvas class="crop-preview" id="cpv-64" width="64" height="64" style="width:64px;height:64px"></canvas>
+      <canvas class="crop-preview" id="cpv-40" width="40" height="40" style="width:40px;height:40px"></canvas>
+      <canvas class="crop-preview" id="cpv-28" width="28" height="28" style="width:28px;height:28px"></canvas>
+    </div>
+    <div class="crop-foot">
+      <button class="btn btn-ghost" onclick="closeCrop()">Huỷ</button>
+      <button class="btn btn-gold" id="crop-ok-btn" onclick="cropConfirm()"><i class="ri-upload-cloud-2-line"></i> Xác nhận & Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-wrap" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;align-items:flex-end"></div>
+
+<!-- QUẢN LÝ ẢO -->
+<div id="vm-char">
+  <div class="vm-bubble" id="vm-bubble"><span id="vm-msg"></span></div>
+  <div class="vm-body">
+    <div class="vm-avatar"><i class="ri-user-star-fill"></i></div>
+    <div class="vm-label">Đại ca 133</div>
+  </div>
+</div>
+
+<!-- ══════════ JAVASCRIPT ══════════ -->
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/logic.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
