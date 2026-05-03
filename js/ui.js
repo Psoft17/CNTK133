@@ -78,6 +78,30 @@ function renderDashboard(d) {
   if (!_dbAnimated) requestAnimationFrame(()=>_animateDashboard());
 }
 
+function _countUp(el, delay){
+  if(el.children.length) return;
+  const original=el.textContent.trim();
+  if(!/\d/.test(original)) return;
+  const isCurrency=original.includes('₫');
+  const neg=original.startsWith('-');
+  const raw=parseInt(original.replace(/[^\d]/g,''))*(neg?-1:1);
+  if(!raw) return;
+  const suffix=original.replace(/^-?[\d.,\s₫]+/,'');
+  const duration=900;
+  setTimeout(()=>{
+    const t0=performance.now();
+    function tick(now){
+      const p=Math.min((now-t0)/duration,1);
+      const ease=1-Math.pow(1-p,4);
+      const cur=Math.round(raw*ease);
+      el.textContent=isCurrency?fVND(cur):(neg&&cur>0?'-':'')+Math.abs(cur)+suffix;
+      if(p<1) requestAnimationFrame(tick);
+      else el.textContent=original;
+    }
+    requestAnimationFrame(tick);
+  },delay);
+}
+
 function _animateDashboard(){
   if (_dbAnimated) return;
   _dbAnimated = true;
@@ -86,6 +110,8 @@ function _animateDashboard(){
   document.querySelectorAll('#db-balances .bal-item').forEach((el,i)=>run(el,i%2===0?'dbBalLeft':'dbBalRight',320+i*65));
   document.querySelectorAll('#db-suggestions .pay-item').forEach((el,i)=>run(el,'dbSugIn',320+i*60));
   document.querySelectorAll('#db-recent tr').forEach((el,i)=>run(el,'dbRowIn',480+i*50));
+  document.querySelectorAll('#db-stats .sc-value').forEach((el,i)=>_countUp(el,320+i*80));
+  document.querySelectorAll('#db-balances .bi-amount').forEach((el,i)=>_countUp(el,480+i*65));
 }
 
 function _animatePage(name){
@@ -427,6 +453,14 @@ document.addEventListener('click',function(e){
   const w=document.getElementById('notif-wrap');
   if(w && !w.contains(e.target)) document.getElementById('notif-panel').classList.remove('open');
 });
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('button,.btn,label.toggle-label');
+  if(!btn||btn.disabled) return;
+  btn.classList.remove('jelly-pop');
+  void btn.offsetWidth;
+  btn.classList.add('jelly-pop');
+  btn.addEventListener('animationend',()=>btn.classList.remove('jelly-pop'),{once:true});
+},true);
 
 function renderNotif(d){
   const items=[];
@@ -482,6 +516,198 @@ function renderNotif(d){
     `<div class="notif-item"><div class="notif-icon ${n.icon}">${n.emoji}</div><div class="notif-body"><div class="ntitle">${n.title}</div><div class="ntime">${n.time}</div></div></div>`
   ).join('');
 }
+
+// ══════════════════════════════════════════════════════
+//  CUSTOM SELECT ENGINE
+// ══════════════════════════════════════════════════════
+(function(){
+  const _drop=document.createElement('div');
+  _drop.className='csel-drop';
+  document.body.appendChild(_drop);
+  let _aTrig=null,_aSel=null;
+
+  function _close(){
+    _drop.classList.remove('open');
+    if(_aTrig) _aTrig.classList.remove('active');
+    _aTrig=null; _aSel=null;
+  }
+  function _pos(trig){
+    const r=trig.getBoundingClientRect();
+    const below=window.innerHeight-r.bottom>80||r.top<200;
+    _drop.style.left=r.left+'px';
+    _drop.style.width=r.width+'px';
+    if(below){_drop.style.top=(r.bottom+4)+'px';_drop.style.bottom='auto';}
+    else{_drop.style.bottom=(window.innerHeight-r.top+4)+'px';_drop.style.top='auto';}
+  }
+  function _build(sel){
+    _drop.innerHTML=Array.from(sel.options).map((o,i)=>
+      `<div class="csel-opt${sel.selectedIndex===i?' csel-sel':''}" data-v="${o.value}">${o.text}</div>`
+    ).join('');
+    _drop.querySelectorAll('.csel-opt').forEach(item=>{
+      item.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        _aSel.value=item.dataset.v;
+        _aSel.dispatchEvent(new Event('change',{bubbles:true}));
+        _close();
+      });
+    });
+  }
+  function _open(trig,sel){
+    if(_aTrig===trig){_close();return;}
+    _close();
+    _pos(trig); _build(sel);
+    _aTrig=trig; _aSel=sel;
+    trig.classList.add('active');
+    requestAnimationFrame(()=>_drop.classList.add('open'));
+  }
+  function _sync(trig,sel){
+    const o=sel.options[sel.selectedIndex];
+    trig.querySelector('.csel-val').textContent=o?o.text:'';
+    trig.classList.toggle('csel-ph',!sel.value);
+  }
+
+  window._initCustomSelects=function(){
+    document.querySelectorAll('.fgroup select:not([data-csel])').forEach(sel=>{
+      sel.dataset.csel='1';
+      const wrap=document.createElement('div');
+      wrap.className='csel-wrap';
+      sel.parentNode.insertBefore(wrap,sel);
+      wrap.appendChild(sel);
+
+      const trig=document.createElement('div');
+      trig.className='csel-trigger csel-ph';
+      trig.innerHTML='<span class="csel-val">— Chọn —</span><i class="ri-arrow-down-s-line csel-arrow"></i>';
+      wrap.appendChild(trig);
+
+      trig.addEventListener('mousedown',e=>{e.preventDefault();_open(trig,sel);});
+
+      const pd=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+      Object.defineProperty(sel,'value',{
+        get(){return pd.get.call(this);},
+        set(v){pd.set.call(this,v);_sync(trig,this);},
+        configurable:true
+      });
+
+      new MutationObserver(()=>{
+        _sync(trig,sel);
+        if(_aSel===sel) _close();
+      }).observe(sel,{childList:true});
+
+      _sync(trig,sel);
+    });
+  };
+
+  document.addEventListener('mousedown',e=>{
+    if(_aTrig&&!_drop.contains(e.target)&&!_aTrig.closest('.csel-wrap').contains(e.target)) _close();
+  });
+  window.addEventListener('scroll',_close,true);
+  window.addEventListener('resize',_close);
+})();
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_initCustomSelects);
+else _initCustomSelects();
+
+// ══════════════════════════════════════════════════════
+//  DATE PICKER ENGINE
+// ══════════════════════════════════════════════════════
+(function(){
+  const MONTHS=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  const WDAYS=['T2','T3','T4','T5','T6','T7','CN'];
+  const _cal=document.createElement('div');
+  _cal.className='dpcal';
+  document.body.appendChild(_cal);
+  let _inp=null,_y=0,_m=0;
+
+  function _parse(inp){const r=(inp.value||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return r?new Date(+r[3],+r[2]-1,+r[1]):null;}
+  function _fmt(y,m,d){return String(d).padStart(2,'0')+'/'+String(m+1).padStart(2,'0')+'/'+y;}
+  function _close(){_cal.classList.remove('open');_inp=null;}
+  function _pos(inp){
+    const r=inp.getBoundingClientRect();
+    const below=window.innerHeight-r.bottom>300||r.top<200;
+    _cal.style.left=Math.min(r.left,window.innerWidth-296)+'px';
+    if(below){_cal.style.top=(r.bottom+4)+'px';_cal.style.bottom='auto';}
+    else{_cal.style.bottom=(window.innerHeight-r.top+4)+'px';_cal.style.top='auto';}
+  }
+  function _render(){
+    const td=new Date(),sel=_parse(_inp);
+    const dim=new Date(_y,_m+1,0).getDate();
+    const fd=(new Date(_y,_m,1).getDay()+6)%7;
+    const todayStr=_fmt(td.getFullYear(),td.getMonth(),td.getDate());
+    const yd=new Date(td);yd.setDate(td.getDate()-1);
+    const ydStr=_fmt(yd.getFullYear(),yd.getMonth(),yd.getDate());
+    let cells='';
+    for(let i=0;i<fd;i++) cells+='<div></div>';
+    for(let d=1;d<=dim;d++){
+      const isT=td.getFullYear()===_y&&td.getMonth()===_m&&td.getDate()===d;
+      const isS=sel&&sel.getFullYear()===_y&&sel.getMonth()===_m&&sel.getDate()===d;
+      const isSun=new Date(_y,_m,d).getDay()===0;
+      cells+=`<div class="dp-day${isT?' dp-today':''}${isS?' dp-sel':''}${isSun?' dp-sun':''}" data-d="${d}">${d}</div>`;
+    }
+    _cal.innerHTML=`
+      <div class="dp-quick">
+        <button class="dp-qbtn" data-v="${todayStr}"><i class="ri-calendar-check-line"></i> Hôm nay</button>
+        <button class="dp-qbtn" data-v="${ydStr}"><i class="ri-arrow-go-back-line"></i> Hôm qua</button>
+      </div>
+      <div class="dp-head">
+        <button class="dp-nav" id="dp-pv"><i class="ri-arrow-left-s-line"></i></button>
+        <span class="dp-title">${MONTHS[_m]}, ${_y}</span>
+        <button class="dp-nav" id="dp-nx"><i class="ri-arrow-right-s-line"></i></button>
+      </div>
+      <div class="dp-grid">
+        ${WDAYS.map(w=>`<div class="dp-wd">${w}</div>`).join('')}
+        ${cells}
+      </div>`;
+    _cal.querySelector('#dp-pv').addEventListener('mousedown',e=>{e.preventDefault();if(--_m<0){_m=11;_y--;}_render();});
+    _cal.querySelector('#dp-nx').addEventListener('mousedown',e=>{e.preventDefault();if(++_m>11){_m=0;_y++;}_render();});
+    _cal.querySelectorAll('.dp-day').forEach(el=>{
+      el.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        _inp.value=_fmt(_y,_m,+el.dataset.d);
+        _inp.dispatchEvent(new Event('input',{bubbles:true}));
+        _close();
+      });
+    });
+    _cal.querySelectorAll('.dp-qbtn').forEach(btn=>{
+      btn.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        _inp.value=btn.dataset.v;
+        _inp.dispatchEvent(new Event('input',{bubbles:true}));
+        _close();
+      });
+    });
+  }
+  function _open(inp){
+    if(_inp===inp){_close();return;}
+    _inp=inp;
+    const d=_parse(inp)||new Date();
+    _y=d.getFullYear();_m=d.getMonth();
+    _pos(inp);_render();
+    requestAnimationFrame(()=>_cal.classList.add('open'));
+  }
+  window._initDatePickers=function(){
+    document.querySelectorAll('.fgroup input[placeholder="DD/MM/YYYY"]:not([data-dp])').forEach(inp=>{
+      inp.dataset.dp='1';
+      inp.setAttribute('autocomplete','off');
+      inp.setAttribute('inputmode','numeric');
+      const wrap=document.createElement('div');
+      wrap.className='dp-wrap';
+      inp.parentNode.insertBefore(wrap,inp);
+      wrap.appendChild(inp);
+      const icon=document.createElement('i');
+      icon.className='ri-calendar-line dp-icon';
+      wrap.appendChild(icon);
+      icon.addEventListener('mousedown',e=>{e.preventDefault();_open(inp);inp.focus();});
+      inp.addEventListener('focus',()=>{if(_inp!==inp)_open(inp);});
+    });
+  };
+  document.addEventListener('mousedown',e=>{
+    if(_inp&&!_cal.contains(e.target)&&e.target!==_inp&&!e.target.classList.contains('dp-icon')) _close();
+  });
+  window.addEventListener('scroll',_close,true);
+  window.addEventListener('resize',_close);
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&_inp)_close();});
+})();
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_initDatePickers);
+else _initDatePickers();
 
 function toast(msg,type){
   const w=document.getElementById('toast-wrap');
