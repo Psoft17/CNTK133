@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════
 var D = null;           // cache dữ liệu hiện tại
 var splitMode = 'even';
-var _searchPC='', _searchNQ='', _searchCQ='', _searchTT='';
+var _searchPC='', _searchNQ='', _searchCQ='', _searchTT='', _searchXOA='';
 var _dbAnimated = false;
 var _sbAnimated = false;
 var currentPayerID = '';
@@ -36,7 +36,7 @@ function stcCustom(color,icon,label,inner){ return `<div class="stat-card ${colo
 // ══════════════════════════════════════════════════════
 //  RENDER ALL
 // ══════════════════════════════════════════════════════
-function renderAll(d) { renderDashboard(d); renderNV(d); renderPC(d); renderQuy(d); renderTT(d); fillDrops(d); renderNotif(d); _animateSidebar(); }
+function renderAll(d) { renderDashboard(d); renderNV(d); renderPC(d); renderQuy(d); renderTT(d); renderLichSuXoa(d); fillDrops(d); renderNotif(d); _animateSidebar(); }
 
 function renderDashboard(d) {
   const sl = d.soDuList;
@@ -128,6 +128,8 @@ function _animatePage(name){
     document.querySelectorAll('#page-thanhtoan .card').forEach((el,i)=>run(el,i%2===0?'dbBalLeft':'dbBalRight',i*90));
     document.querySelectorAll('#tt-quick-sug .pay-item').forEach((el,i)=>run(el,'dbSugIn',200+i*60));
     document.querySelectorAll('#tt-table tr').forEach((el,i)=>run(el,'dbRowIn',280+i*38));
+  } else if(name==='lichsuxoa'){
+    document.querySelectorAll('#xoa-table tr').forEach((el,i)=>run(el,'dbRowIn',i*38));
   }
 }
 
@@ -183,6 +185,7 @@ function onSearchPC(v){ _searchPC=v.toLowerCase().trim(); _pgKey('pc').page=1; i
 function onSearchNQ(v){ _searchNQ=v.toLowerCase().trim(); _pgKey('nq').page=1; if(D) renderQuy(D); }
 function onSearchCQ(v){ _searchCQ=v.toLowerCase().trim(); _pgKey('cq').page=1; if(D) renderQuy(D); }
 function onSearchTT(v){ _searchTT=v.toLowerCase().trim(); _pgKey('tt').page=1; if(D) renderTT(D); }
+function onSearchXOA(v){ _searchXOA=v.toLowerCase().trim(); _pgKey('xoa').page=1; if(D) renderLichSuXoa(D); }
 
 function renderPC(d) {
   const nameMap={}; d.nhanVien.forEach(nv=>nameMap[nv.id]=nv.hoTen);
@@ -251,6 +254,123 @@ function renderQuy(d) {
     <td class="c-neg">−${fVND(c.soTien)}</td>
     <td><div class="action-btns"><button class="btn-icon edit" onclick="moSuaCQ('${c.id}')"><i class="ri-edit-line"></i></button><button class="btn-icon del" onclick="xoaPhieu('CQ','${c.id}')"><i class="ri-delete-bin-line"></i></button></div></td></tr>`,
   '<div class="empty"><span><i class="ri-inbox-unarchive-line"></i></span>Chưa có dữ liệu.</div>');
+}
+
+function xemChiTietXoa(lsxId) {
+  if (!D) return;
+  const lsx = D.lichSuXoaList.find(x => x.id === lsxId);
+  if (!lsx) return;
+  const nvMap = {}; D.nhanVien.forEach(nv => nvMap[nv.id] = nv);
+  let bodyHtml = '';
+
+  if (!lsx.dataJson) {
+    bodyHtml = '<div class="empty"><span><i class="ri-information-line"></i></span>Không có dữ liệu chi tiết cho bản ghi này.</div>';
+  } else {
+    const data = JSON.parse(lsx.dataJson);
+    switch (lsx.loai) {
+      case 'PC': {
+        const nguoiUng = nvMap[data.nguoi_ung_id] || { id: data.nguoi_ung_id, hoTen: data.nguoi_ung_id, avatarFileID: '' };
+        const partsHtml = (data.chi_tiet || []).map(ct => {
+          const nv = nvMap[ct.nhan_vien_id] || { id: ct.nhan_vien_id, hoTen: ct.nhan_vien_id, avatarFileID: '' };
+          return `<div class="detail-part-row">${avatarHtml(nv,34)}<div class="detail-part-name">${nv.hoTen}</div><div class="detail-part-amt">−${fVND(ct.so_tien_chia)}</div></div>`;
+        }).join('') || '<div style="color:var(--muted);font-size:13px;padding:10px 0">Không có dữ liệu phân bổ.</div>';
+        bodyHtml = `
+          <div class="detail-header"><div style="flex:1">
+            <div style="font-size:18px;font-weight:800">${data.mo_ta}</div>
+            <div class="detail-meta">Mã: <b>${data.id}</b> · Ngày: <b>${data.ngay_tao}</b></div>
+            <div class="detail-amount">${fVND(data.so_tien_tong)}</div>
+          </div></div>
+          <div class="detail-info-grid">
+            <div class="detail-info-item"><div class="dii-label">Người ứng tiền</div><div class="dii-value" style="display:flex;align-items:center;gap:8px">${avatarHtml(nguoiUng,28)}${nguoiUng.hoTen}</div></div>
+            <div class="detail-info-item"><div class="dii-label">Số người tham gia</div><div class="dii-value">${(data.chi_tiet||[]).length} người</div></div>
+            <div class="detail-info-item"><div class="dii-label">Tổng phiếu</div><div class="dii-value" style="color:var(--blue)">${fVND(data.so_tien_tong)}</div></div>
+            <div class="detail-info-item"><div class="dii-label">Thời gian xóa</div><div class="dii-value" style="color:var(--red)">${fDateTime(lsx.xoaLuc)}</div></div>
+          </div>
+          <div class="detail-section-title">Phân bổ chi tiết</div>${partsHtml}`;
+        break;
+      }
+      case 'NQ': {
+        const nv = nvMap[data.nhan_vien_id] || { id: data.nhan_vien_id, hoTen: data.nhan_vien_id, avatarFileID: '' };
+        bodyHtml = `<div class="detail-info-grid">
+          <div class="detail-info-item"><div class="dii-label">Mã</div><div class="dii-value"><span class="badge bd-green">${data.id}</span></div></div>
+          <div class="detail-info-item"><div class="dii-label">Nhân viên</div><div class="dii-value" style="display:flex;align-items:center;gap:8px">${avatarHtml(nv,28)}${nv.hoTen}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Số tiền nộp</div><div class="dii-value" style="color:var(--green);font-weight:700">${fVND(data.so_tien)}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Ngày nộp</div><div class="dii-value">${data.ngay_nop||'—'}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Ghi chú</div><div class="dii-value">${data.mo_ta||'—'}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Thời gian xóa</div><div class="dii-value" style="color:var(--red)">${fDateTime(lsx.xoaLuc)}</div></div>
+        </div>`;
+        break;
+      }
+      case 'CQ': {
+        bodyHtml = `<div class="detail-info-grid">
+          <div class="detail-info-item"><div class="dii-label">Mã</div><div class="dii-value"><span class="badge bd-gray">${data.id}</span></div></div>
+          <div class="detail-info-item"><div class="dii-label">Mô tả</div><div class="dii-value" style="font-weight:600">${data.mo_ta}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Số tiền chi</div><div class="dii-value" style="color:var(--red);font-weight:700">${fVND(data.so_tien)}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Ngày chi</div><div class="dii-value">${data.ngay_tao||'—'}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Thời gian xóa</div><div class="dii-value" style="color:var(--red)">${fDateTime(lsx.xoaLuc)}</div></div>
+        </div>`;
+        break;
+      }
+      case 'TT': {
+        const nTra  = nvMap[data.nguoi_tra_id]  || { id: data.nguoi_tra_id,  hoTen: data.nguoi_tra_id,  avatarFileID: '' };
+        const nNhan = nvMap[data.nguoi_nhan_id] || { id: data.nguoi_nhan_id, hoTen: data.nguoi_nhan_id, avatarFileID: '' };
+        bodyHtml = `<div class="detail-info-grid">
+          <div class="detail-info-item"><div class="dii-label">Mã</div><div class="dii-value"><span class="badge bd-blue">${data.id}</span></div></div>
+          <div class="detail-info-item"><div class="dii-label">Số tiền</div><div class="dii-value" style="color:var(--blue);font-weight:700">${fVND(data.so_tien)}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Người trả</div><div class="dii-value" style="display:flex;align-items:center;gap:8px">${avatarHtml(nTra,28)}<span style="color:var(--red);font-weight:600">${nTra.hoTen}</span></div></div>
+          <div class="detail-info-item"><div class="dii-label">Người nhận</div><div class="dii-value" style="display:flex;align-items:center;gap:8px">${avatarHtml(nNhan,28)}<span style="color:var(--green);font-weight:600">${nNhan.hoTen}</span></div></div>
+          <div class="detail-info-item"><div class="dii-label">Ngày</div><div class="dii-value">${data.ngay_tao||'—'}</div></div>
+          <div class="detail-info-item"><div class="dii-label">Thời gian xóa</div><div class="dii-value" style="color:var(--red)">${fDateTime(lsx.xoaLuc)}</div></div>
+        </div>`;
+        break;
+      }
+    }
+  }
+
+  document.getElementById('modal-xoa-title').textContent = lsx.tenLoai + ' · ' + lsx.recordId;
+  document.getElementById('modal-xoa-body').innerHTML = bodyHtml;
+  const restoreBtn = document.getElementById('modal-xoa-restore-btn');
+  restoreBtn.style.display = lsx.dataJson ? '' : 'none';
+  restoreBtn.onclick = () => khoiPhucPhieu(lsxId);
+  openModal('modal-xoa-detail');
+}
+
+function fNguoiLQ(val) {
+  if (!val) return '—';
+  const lines = val.split('\n');
+  if (lines.length === 1) return `<span style="font-size:12.5px">${lines[0]}</span>`;
+  return `<div style="font-size:12.5px;font-weight:600;line-height:1.4">${lines[0]}</div>`
+       + `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">${lines[1]}</div>`;
+}
+
+function fDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderLichSuXoa(d) {
+  const badgeMap = { PC:'bd-gold', NQ:'bd-green', CQ:'bd-gray', TT:'bd-blue' };
+  let list = d.lichSuXoaList || [];
+  if (_searchXOA) list = list.filter(x =>
+    (x.moTa||'').toLowerCase().includes(_searchXOA) ||
+    (x.recordId||'').toLowerCase().includes(_searchXOA) ||
+    (x.nguoiLienQuan||'').toLowerCase().includes(_searchXOA) ||
+    (x.tenLoai||'').toLowerCase().includes(_searchXOA)
+  );
+  _pgRender('xoa', list, 'xoa-table', 'xoa-pgctrl', x => `<tr>
+    <td><span class="badge ${badgeMap[x.loai]||'bd-gray'}">${x.tenLoai}</span></td>
+    <td><span class="badge bd-red" style="font-family:JetBrains Mono,monospace;font-size:11px">${x.recordId}</span></td>
+    <td style="font-weight:600">${x.moTa||'—'}</td>
+    <td>${fNguoiLQ(x.nguoiLienQuan)}</td>
+    <td class="c-neg">−${fVND(x.soTien)}</td>
+    <td class="c-mut">${x.ngayGoc||'—'}</td>
+    <td class="c-mut">${fDateTime(x.xoaLuc)}</td>
+    <td><div class="action-btns">
+      <button class="btn btn-ghost btn-sm" onclick="xemChiTietXoa('${x.id}')">Chi tiết</button>
+      <button class="btn btn-green btn-sm" onclick="khoiPhucPhieu('${x.id}')" ${x.dataJson?'':'disabled title="Không có dữ liệu khôi phục"'}><i class="ri-refresh-line"></i> Khôi phục</button>
+    </div></td></tr>`,
+  '<div class="empty"><span><i class="ri-delete-bin-line"></i></span>Chưa có lịch sử xóa.</div>');
 }
 
 function renderTT(d) {
@@ -431,9 +551,31 @@ function closeModal(id){
 
 // Custom confirm dialog — thay thế window.confirm()
 let _confirmResolve = null;
-function showConfirm(msg) {
+function showConfirm(msg, type) {
   return new Promise(resolve => {
     document.getElementById('confirm-msg').innerHTML = msg.replace(/\n/g,'<br>');
+    const isRestore = type === 'restore';
+    const icon    = document.getElementById('confirm-icon');
+    const iconI   = document.getElementById('confirm-icon-i');
+    const title   = document.getElementById('confirm-title');
+    const okBtn   = document.getElementById('confirm-ok-btn');
+    if (isRestore) {
+      icon.style.background  = 'rgba(16,185,129,.1)';
+      icon.style.border      = '2px solid rgba(16,185,129,.3)';
+      icon.style.color       = '#059669';
+      iconI.className        = 'ri-refresh-line';
+      title.textContent      = 'Xác nhận khôi phục';
+      okBtn.className        = 'btn btn-green';
+      okBtn.innerHTML        = '<i class="ri-refresh-line"></i> Khôi phục';
+    } else {
+      icon.style.background  = 'rgba(239,68,68,.1)';
+      icon.style.border      = '2px solid rgba(239,68,68,.22)';
+      icon.style.color       = '#ef4444';
+      iconI.className        = 'ri-error-warning-line';
+      title.textContent      = 'Xác nhận thao tác';
+      okBtn.className        = 'btn btn-red';
+      okBtn.innerHTML        = '<i class="ri-delete-bin-line"></i> Xóa';
+    }
     _confirmResolve = resolve;
     openModal('modal-confirm');
   });
@@ -480,6 +622,11 @@ document.addEventListener('click',function(e){
   const w=document.getElementById('notif-wrap');
   if(w && !w.contains(e.target)) document.getElementById('notif-panel').classList.remove('open');
 });
+// Tắt scroll wheel thay đổi giá trị input số
+document.addEventListener('wheel', function() {
+  if (document.activeElement.type === 'number') document.activeElement.blur();
+});
+
 document.addEventListener('click',function(e){
   const btn=e.target.closest('button,.btn,label.toggle-label');
   if(!btn||btn.disabled) return;

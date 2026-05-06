@@ -19,6 +19,7 @@ async function loadAllData() {
     { data: thanhToan },
     { data: quyNop },
     { data: quyChi },
+    { data: lichSuXoa },
   ] = await Promise.all([
     sb.from('nhan_vien').select('*').order('created_at'),
     sb.from('phieu_chi').select('*').order('created_at', { ascending: false }),
@@ -26,6 +27,7 @@ async function loadAllData() {
     sb.from('thanh_toan').select('*').order('created_at', { ascending: false }),
     sb.from('quy_nop').select('*').order('created_at', { ascending: false }),
     sb.from('quy_chi').select('*').order('created_at', { ascending: false }),
+    sb.from('lich_su_xoa').select('*').order('xoa_luc', { ascending: false }),
   ]);
 
   // Map key → camelCase để khớp UI cũ
@@ -52,6 +54,13 @@ async function loadAllData() {
   const qcList = (quyChi||[]).map(r => ({
     id: r.id, moTa: r.mo_ta, soTien: r.so_tien, ngayTao: r.ngay_tao
   }));
+  const lsxList = (lichSuXoa||[]).map(r => ({
+    id: r.id, loai: r.loai, tenLoai: r.ten_loai,
+    recordId: r.record_id, moTa: r.mo_ta,
+    soTien: r.so_tien || 0, nguoiLienQuan: r.nguoi_lien_quan,
+    ngayGoc: r.ngay_goc, xoaLuc: r.xoa_luc,
+    dataJson: r.data_json || null
+  }));
 
   // Enrich với tên NV
   const nvMap = {}; nvList.forEach(nv => nvMap[nv.id] = nv);
@@ -71,7 +80,8 @@ async function loadAllData() {
     nhanVien: nvList, phieuChi: pcList, chiTietPhieuChi: ctList,
     thanhToanList: ttList, quyChi: qnList, chiQuyList: qcList,
     soDuList, goiYThanhToan,
-    tongNopQuy, tongChiQuy, soDuQuy: tongNopQuy - tongChiQuy
+    tongNopQuy, tongChiQuy, soDuQuy: tongNopQuy - tongChiQuy,
+    lichSuXoaList: lsxList
   };
 }
 
@@ -131,6 +141,7 @@ function startRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'thanh_toan' },        handleRTChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'quy_nop' },           handleRTChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'quy_chi' },           handleRTChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lich_su_xoa' },      handleRTChange)
     .subscribe();
 }
 

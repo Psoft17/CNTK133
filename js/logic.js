@@ -217,14 +217,123 @@ async function doSuaTT(btn) {
 }
 
 // ── XÓA ──────────────────────────────────────────────
-const _tableMap = { PC:'phieu_chi', NQ:'quy_nop', CQ:'quy_chi', TT:'thanh_toan' };
-const _labelMap = { PC:'phiếu chi', NQ:'khoản nộp quỹ', CQ:'khoản chi quỹ', TT:'thanh toán' };
+const _tableMap   = { PC:'phieu_chi', NQ:'quy_nop', CQ:'quy_chi', TT:'thanh_toan' };
+const _labelMap   = { PC:'phiếu chi', NQ:'khoản nộp quỹ', CQ:'khoản chi quỹ', TT:'thanh toán' };
+const _tenLoaiMap = { PC:'Phiếu Chi', NQ:'Nộp Quỹ', CQ:'Chi Quỹ', TT:'Thanh Toán' };
 
 async function xoaPhieu(loai, id) {
   if (!await showConfirm('Xác nhận xóa '+_labelMap[loai]+' '+id+'?\nThao tác này không thể hoàn tác!')) return;
-  const { error } = await sb.from(_tableMap[loai]).delete().eq('id',id);
-  if (error) toast('❌ '+error.message,'err');
-  else toast('✅ Đã xóa!','ok');
+
+  // Lấy dữ liệu gốc trước khi xóa để ghi log
+  const { data: rec } = await sb.from(_tableMap[loai]).select('*').eq('id', id).single();
+
+  const { error } = await sb.from(_tableMap[loai]).delete().eq('id', id);
+  if (error) return toast('❌ '+error.message, 'err');
+
+  // Ghi log lịch sử xóa
+  if (!rec) {
+    toast('⚠️ Xóa thành công nhưng không lấy được dữ liệu gốc để ghi log', 'err');
+  } else {
+    const logData = _buildDeleteLog(loai, id, rec);
+    console.log('[LSX] Insert data:', logData);
+    const { error: logErr } = await sb.from('lich_su_xoa').insert(logData);
+    if (logErr) {
+      console.error('[LSX] Lỗi:', logErr);
+      toast('⚠️ Ghi log thất bại: ' + logErr.message, 'err');
+    }
+  }
+
+  toast('✅ Đã xóa!', 'ok');
+}
+
+function _buildDeleteLog(loai, id, rec) {
+  const nvMap = D ? Object.fromEntries(D.nhanVien.map(nv => [nv.id, nv.hoTen])) : {};
+  let moTa = '', soTien = 0, nguoiLienQuan = '', ngayGoc = '', dataObj = {};
+  switch (loai) {
+    case 'PC': {
+      moTa = rec.mo_ta;
+      soTien = rec.so_tien_tong;
+      const nguoiUngTen = nvMap[rec.nguoi_ung_id] || rec.nguoi_ung_id;
+      const chiTietRows = D ? (D.chiTietPhieuChi || []).filter(ct => ct.phieuChiID === id) : [];
+      const thamGia = chiTietRows.map(ct => nvMap[ct.nhanVienID] || ct.nhanVienID);
+      nguoiLienQuan = 'Người ứng: ' + nguoiUngTen
+        + (thamGia.length ? '\nĐược ứng: ' + thamGia.join(', ') : '');
+      ngayGoc = rec.ngay_tao;
+      dataObj = {
+        id: rec.id, mo_ta: rec.mo_ta, so_tien_tong: rec.so_tien_tong,
+        nguoi_ung_id: rec.nguoi_ung_id, ngay_tao: rec.ngay_tao,
+        chi_tiet: chiTietRows.map(ct => ({ nhan_vien_id: ct.nhanVienID, so_tien_chia: ct.soTienChia }))
+      };
+      break;
+    }
+    case 'NQ':
+      moTa = rec.mo_ta || 'Nộp quỹ';
+      soTien = rec.so_tien;
+      nguoiLienQuan = 'Nhân viên: ' + (nvMap[rec.nhan_vien_id] || rec.nhan_vien_id);
+      ngayGoc = rec.ngay_nop;
+      dataObj = { id: rec.id, nhan_vien_id: rec.nhan_vien_id, so_tien: rec.so_tien, mo_ta: rec.mo_ta, ngay_nop: rec.ngay_nop };
+      break;
+    case 'CQ':
+      moTa = rec.mo_ta;
+      soTien = rec.so_tien;
+      nguoiLienQuan = null;
+      ngayGoc = rec.ngay_tao;
+      dataObj = { id: rec.id, mo_ta: rec.mo_ta, so_tien: rec.so_tien, ngay_tao: rec.ngay_tao };
+      break;
+    case 'TT': {
+      const nguoiTra  = nvMap[rec.nguoi_tra_id]  || rec.nguoi_tra_id;
+      const nguoiNhan = nvMap[rec.nguoi_nhan_id] || rec.nguoi_nhan_id;
+      moTa = nguoiTra + ' → ' + nguoiNhan;
+      soTien = rec.so_tien;
+      nguoiLienQuan = 'Người trả: ' + nguoiTra + '\nNgười nhận: ' + nguoiNhan;
+      ngayGoc = rec.ngay_tao;
+      dataObj = { id: rec.id, nguoi_tra_id: rec.nguoi_tra_id, nguoi_nhan_id: rec.nguoi_nhan_id, so_tien: rec.so_tien, ngay_tao: rec.ngay_tao };
+      break;
+    }
+  }
+  return {
+    id: genID('LSX'),
+    loai, ten_loai: _tenLoaiMap[loai],
+    record_id: id, mo_ta: moTa,
+    so_tien: soTien, nguoi_lien_quan: nguoiLienQuan || null,
+    ngay_goc: ngayGoc || null,
+    data_json: JSON.stringify(dataObj)
+  };
+}
+
+async function khoiPhucPhieu(lsxId) {
+  if (!D) return;
+  const lsx = D.lichSuXoaList.find(x => x.id === lsxId);
+  if (!lsx || !lsx.dataJson) return toast('❌ Không có dữ liệu để khôi phục!', 'err');
+  const data = JSON.parse(lsx.dataJson);
+  if (!await showConfirm('Khôi phục ' + lsx.tenLoai + ' ' + lsx.recordId + '?\nBản ghi sẽ được tạo lại với dữ liệu gốc.', 'restore')) return;
+
+  // Kiểm tra trùng ID
+  const { data: existing } = await sb.from(_tableMap[lsx.loai]).select('id').eq('id', data.id).maybeSingle();
+  if (existing) return toast('❌ Bản ghi này đã tồn tại, không thể khôi phục!', 'err');
+
+  let err;
+  switch (lsx.loai) {
+    case 'PC': {
+      const { chi_tiet, ...pcData } = data;
+      const { error: e1 } = await sb.from('phieu_chi').insert(pcData);
+      if (e1) return toast('❌ ' + e1.message, 'err');
+      if (chi_tiet && chi_tiet.length) {
+        const rows = chi_tiet.map(ct => ({ phieu_chi_id: data.id, ...ct }));
+        const { error: e2 } = await sb.from('chi_tiet_phieu_chi').insert(rows);
+        err = e2;
+      }
+      break;
+    }
+    case 'NQ': { const { error } = await sb.from('quy_nop').insert(data);    err = error; break; }
+    case 'CQ': { const { error } = await sb.from('quy_chi').insert(data);    err = error; break; }
+    case 'TT': { const { error } = await sb.from('thanh_toan').insert(data); err = error; break; }
+  }
+  if (err) return toast('❌ ' + err.message, 'err');
+
+  await sb.from('lich_su_xoa').delete().eq('id', lsxId);
+  closeModal('modal-xoa-detail');
+  toast('✅ Khôi phục thành công!', 'ok');
 }
 
 // ══════════════════════════════════════════════════════

@@ -384,6 +384,7 @@ tbody tr:hover td{background:#fafbff;color:var(--text)}
 .bd-blue{background:rgba(59,130,246,.1);color:#1d4ed8}
 .bd-green{background:rgba(16,185,129,.1);color:#047857}
 .bd-gray{background:var(--border-2);color:var(--muted)}
+.bd-red{background:rgba(239,68,68,.1);color:#b91c1c}
 
 /* ══════════════════════════════════════════════════════
    BUTTONS

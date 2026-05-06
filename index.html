@@ -42,6 +42,7 @@
     <div class="sb-item" onclick="gotoPage('phieuchi',this)"><span class="icon"><i class="ri-file-list-3-line"></i></span><span class="sb-label">Phiếu Chi</span></div>
     <div class="sb-item" onclick="gotoPage('quychung',this)"><span class="icon"><i class="ri-safe-2-line"></i></span><span class="sb-label">Quỹ Chung</span></div>
     <div class="sb-item" onclick="gotoPage('thanhtoan',this)"><span class="icon"><i class="ri-send-plane-2-line"></i></span><span class="sb-label">Thanh Toán</span></div>
+    <div class="sb-item" onclick="gotoPage('lichsuxoa',this)"><span class="icon"><i class="ri-delete-bin-line"></i></span><span class="sb-label">Lịch Sử Xóa</span></div>
   </nav>
 </aside>
 
@@ -175,6 +176,23 @@
         <tbody id="tt-table"></tbody></table>
       </div>
       <div class="pg-ctrl" id="tt-pgctrl"></div>
+    </div>
+  </div>
+
+  <!-- LỊCH SỬ XÓA -->
+  <div id="page-lichsuxoa" class="page">
+    <div class="pg-header">
+      <div><h1>Lịch Sử Xóa</h1><p>Nhật ký các thao tác xóa dữ liệu</p></div>
+      <div class="pg-actions">
+        <div class="search-wrap"><input class="search-input" id="search-xoa" type="text" placeholder="Tìm loại, mã, mô tả, người..." oninput="onSearchXOA(this.value)"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Loại</th><th>Mã gốc</th><th>Mô tả</th><th>Người liên quan</th><th>Số tiền</th><th>Ngày gốc</th><th>Thời gian xóa</th><th></th></tr></thead>
+        <tbody id="xoa-table"></tbody></table>
+      </div>
+      <div class="pg-ctrl" id="xoa-pgctrl"></div>
     </div>
   </div>
 
@@ -407,19 +425,34 @@
   </div>
 </div>
 
+<!-- Chi tiết lịch sử xóa -->
+<div class="modal-overlay" id="modal-xoa-detail" onclick="closeOnBg(event,'modal-xoa-detail')">
+  <div class="modal modal-xl">
+    <div class="modal-head">
+      <h3><i class="ri-delete-bin-line"></i> <span id="modal-xoa-title">Chi tiết đã xóa</span></h3>
+      <button class="modal-close" onclick="closeModal('modal-xoa-detail')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body" id="modal-xoa-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-xoa-detail')">Đóng</button>
+      <button class="btn btn-green" id="modal-xoa-restore-btn"><i class="ri-refresh-line"></i> Khôi phục</button>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm Dialog -->
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal" style="max-width:360px">
     <div style="padding:28px 24px 16px;text-align:center">
-      <div style="width:54px;height:54px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#ef4444">
-        <i class="ri-error-warning-line"></i>
+      <div id="confirm-icon" style="width:54px;height:54px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#ef4444">
+        <i id="confirm-icon-i" class="ri-error-warning-line"></i>
       </div>
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px">Xác nhận thao tác</div>
+      <div id="confirm-title" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px">Xác nhận thao tác</div>
       <p id="confirm-msg" style="font-size:13.5px;color:var(--text-2);line-height:1.65;margin:0"></p>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="confirmCancel()">Hủy</button>
-      <button class="btn btn-red" onclick="confirmOk()"><i class="ri-delete-bin-line"></i> Xóa</button>
+      <button id="confirm-ok-btn" class="btn btn-red" onclick="confirmOk()"><i class="ri-delete-bin-line"></i> Xóa</button>
     </div>
   </div>
 </div>
