@@ -165,9 +165,18 @@ function renderNV(d) {
         const t=sd>0?'<i class="ri-arrow-up-line"></i> Dư nợ cho vay':sd<0?'<i class="ri-arrow-down-line"></i> Đang nợ':'<i class="ri-refresh-line"></i> Đã cân bằng';
         const qrCls = nv.qrFileID ? 'qr-upload-btn qr-has' : 'qr-upload-btn';
         const qrLbl = nv.qrFileID ? '<i class="ri-refresh-line"></i> Cập nhật QR' : '<i class="ri-add-line"></i> Thêm QR ngân hàng';
-        return `<div class="emp-card">${avatarHtml(nv,60,true)}<div class="emp-name">${nv.hoTen}</div><div class="emp-id">${nv.id}</div><div class="emp-bal ${cc}">${fVND(sd)}</div><div class="emp-tag">${t}</div><button class="${qrCls}" onclick="triggerQRUpload('${nv.id}')">${qrLbl}</button></div>`;
+        const emailRow = nv.email
+          ? `<div class="emp-email"><i class="ri-mail-check-line" style="color:var(--green);font-size:13px;flex-shrink:0"></i><span title="${nv.email}">${nv.email}</span><button class="emp-email-edit" onclick="editEmailNV('${nv.id}','${nv.email}')" title="Sửa email"><i class="ri-pencil-line"></i></button></div>`
+          : `<button class="emp-email-add" onclick="editEmailNV('${nv.id}','')"><i class="ri-mail-add-line"></i> Thêm email TB</button>`;
+        return `<div class="emp-card">${avatarHtml(nv,60,true)}<div class="emp-name">${nv.hoTen}</div><div class="emp-id">${nv.id}</div><div class="emp-bal ${cc}">${fVND(sd)}</div><div class="emp-tag">${t}</div>${emailRow}<button class="${qrCls}" onclick="triggerQRUpload('${nv.id}')">${qrLbl}</button></div>`;
       }).join('')
     : '<div class="empty"><span><i class="ri-user-line"></i></span>Chưa có nhân viên.</div>';
+}
+function editEmailNV(nvID, email) {
+  document.getElementById('email-nv-id').value = nvID;
+  document.getElementById('email-nv-input').value = email || '';
+  document.getElementById('email-nv-alert').innerHTML = '';
+  openModal('modal-email-nv');
 }
 
 function onSearchPC(v){ _searchPC=v.toLowerCase().trim(); _pgKey('pc').page=1; if(D) renderPC(D); }
@@ -418,6 +427,24 @@ function closeModal(id){
   overlay.classList.remove('open');
   document.body.style.overflow='';
   overlay.querySelectorAll('[data-md-anim]').forEach(el=>{ el.style.animation=''; el.removeAttribute('data-md-anim'); });
+}
+
+// Custom confirm dialog — thay thế window.confirm()
+let _confirmResolve = null;
+function showConfirm(msg) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-msg').innerHTML = msg.replace(/\n/g,'<br>');
+    _confirmResolve = resolve;
+    openModal('modal-confirm');
+  });
+}
+function confirmOk() {
+  closeModal('modal-confirm');
+  if (_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
+}
+function confirmCancel() {
+  closeModal('modal-confirm');
+  if (_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
 }
 function _animateModalIn(overlay){
   const modal=overlay.querySelector('.modal,.qr-pay-box,.crop-modal');

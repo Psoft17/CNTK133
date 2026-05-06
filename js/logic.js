@@ -1,4 +1,20 @@
 // ══════════════════════════════════════════════════════
+//  EMAIL THÔNG BÁO
+// ══════════════════════════════════════════════════════
+async function doSaveEmailNV(btn) {
+  const nvID = document.getElementById('email-nv-id').value;
+  const email = document.getElementById('email-nv-input').value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return mAlert('email-nv-alert', '⚠️ Email không hợp lệ!', false);
+  setLoading(btn, '<i class="ri-loader-4-line ri-spin"></i> Đang lưu...');
+  const { error } = await sb.from('nhan_vien').update({ email: email || null }).eq('id', nvID);
+  resetBtn(btn, '<i class="ri-check-line"></i> Lưu');
+  if (error) return mAlert('email-nv-alert', '❌ ' + error.message, false);
+  toast('✅ Đã cập nhật email thông báo!', 'ok');
+  closeModal('modal-email-nv');
+}
+
+// ══════════════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════════════
 
@@ -205,7 +221,7 @@ const _tableMap = { PC:'phieu_chi', NQ:'quy_nop', CQ:'quy_chi', TT:'thanh_toan' 
 const _labelMap = { PC:'phiếu chi', NQ:'khoản nộp quỹ', CQ:'khoản chi quỹ', TT:'thanh toán' };
 
 async function xoaPhieu(loai, id) {
-  if (!confirm('Xác nhận xóa '+_labelMap[loai]+' '+id+'?\nThao tác này không thể hoàn tác!')) return;
+  if (!await showConfirm('Xác nhận xóa '+_labelMap[loai]+' '+id+'?\nThao tác này không thể hoàn tác!')) return;
   const { error } = await sb.from(_tableMap[loai]).delete().eq('id',id);
   if (error) toast('❌ '+error.message,'err');
   else toast('✅ Đã xóa!','ok');

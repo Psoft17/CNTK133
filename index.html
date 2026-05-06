@@ -390,6 +390,40 @@
   </div>
 </div>
 
+<!-- Email thông báo nhân viên -->
+<div class="modal-overlay" id="modal-email-nv" onclick="closeOnBg(event,'modal-email-nv')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head"><h3><i class="ri-mail-settings-line"></i> Email thông báo</h3><button class="modal-close" onclick="closeModal('modal-email-nv')"><i class="ri-close-line"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="email-nv-id">
+      <div id="email-nv-alert"></div>
+      <div class="fgroup"><label>Địa chỉ email</label><input id="email-nv-input" type="email" placeholder="example@gmail.com"></div>
+      <p style="font-size:12px;color:var(--muted);margin:0;line-height:1.6">Nhận thông báo tự động khi có <strong style="color:var(--text)">phiếu chi</strong>, <strong style="color:var(--text)">thanh toán</strong>, hoặc <strong style="color:var(--text)">biến động quỹ</strong> mới. Để trống nếu không muốn nhận.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-email-nv')">Huỷ</button>
+      <button class="btn btn-primary" onclick="doSaveEmailNV(this)"><i class="ri-check-line"></i> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:360px">
+    <div style="padding:28px 24px 16px;text-align:center">
+      <div style="width:54px;height:54px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#ef4444">
+        <i class="ri-error-warning-line"></i>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px">Xác nhận thao tác</div>
+      <p id="confirm-msg" style="font-size:13.5px;color:var(--text-2);line-height:1.65;margin:0"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="confirmCancel()">Hủy</button>
+      <button class="btn btn-red" onclick="confirmOk()"><i class="ri-delete-bin-line"></i> Xóa</button>
+    </div>
+  </div>
+</div>
+
 <!-- Crop Modal -->
 <div class="crop-modal-overlay" id="modal-crop">
   <div class="crop-modal">
